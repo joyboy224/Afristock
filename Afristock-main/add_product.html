@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Ajouter un produit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ajouter/Modifier un produit</h1>
+            <button id="backBtn">Retour au tableau de bord</button>
+        </header>
+
+        <div class="product-form">
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productName">Nom du produit :</label>
+                        <input type="text" id="productName" name="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="brand">Marque :</label>
+                        <input type="text" id="brand" name="brand">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="purchasePrice">Prix d'achat (FCFA) :</label>
+                        <input type="number" id="purchasePrice" name="purchasePrice" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sellingPrice">Prix de vente (FCFA) :</label>
+                        <input type="number" id="sellingPrice" name="sellingPrice" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="quantity">Quantité :</label>
+                        <input type="number" id="quantity" name="quantity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dimensions">Dimensions :</label>
+                        <input type="text" id="dimensions" name="dimensions">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="productImage">Image du produit :</label>
+                    <input type="file" id="productImage" name="productImage" accept="image/*">
+                    <img id="imagePreview" src="" alt="Aperçu de l'image" style="display: none; max-width: 200px; margin-top: 10px;">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" id="saveProductBtn">Enregistrer le produit</button>
+                    <button type="button" id="cancelBtn">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/produit.js"></script>
+</body>
+</html>

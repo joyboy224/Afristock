@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Gestion des utilisateurs</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gestion des utilisateurs</h1>
+            <div class="user-info">
+                <span id="boutiqueName">Boutique: </span>
+                <span id="modeInfo">Mode: </span>
+                <button id="backBtn">Retour au tableau de bord</button>
+                <button id="logoutBtn">Déconnexion</button>
+            </div>
+        </header>
+
+        <div class="user-management-content">
+            <div class="add-user-form">
+                <h2>Ajouter un utilisateur</h2>
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label for="username">Nom d'utilisateur :</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Mot de passe :</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Rôle :</label>
+                        <select id="role" name="role" required>
+                            <option value="vendeur">Vendeur</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                    <button type="submit">Ajouter l'utilisateur</button>
+                </form>
+            </div>
+
+            <div class="users-list">
+                <h2>Liste des utilisateurs</h2>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Nom d'utilisateur</th>
+                            <th>Rôle</th>
+                            <th>Date de création</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les utilisateurs seront ajoutés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/users.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

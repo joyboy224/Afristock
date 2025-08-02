@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Choix du mode</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="mode-selection">
+            <h1>Choix du mode de fonctionnement</h1>
+            <div class="mode-options">
+                <div class="mode-option" id="modeLocal">
+                    <h2>🔹 Stock individuel (local)</h2>
+                    <p>
+                        - Chaque boutique gère un stock indépendant<br>
+                        - Données stockées localement<br>
+                        - Fonctionne 100% hors-ligne<br>
+                        - Adapté aux boutiques autonomes
+                    </p>
+                    <button class="btn-local">Choisir le mode local</button>
+                </div>
+                <div class="mode-option" id="modeCentral">
+                    <h2>🔸 Stock partagé (centralisé)</h2>
+                    <p>
+                        - Stock centralisé sur un serveur<br>
+                        - Toutes les boutiques partagent le même stock<br>
+                        - Nécessite une connexion Internet<br>
+                        - Adapté aux entreprises avec logistique unifiée
+                    </p>
+                    <button class="btn-central">Choisir le mode centralisé</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/mode.js"></script>
+</body>
+</html>

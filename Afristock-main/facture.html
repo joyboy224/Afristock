@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Facture</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="invoice-header">
+            <h1>FACTURE</h1>
+            <button id="printBtn">Imprimer</button>
+            <button id="backBtn">Retour au tableau de bord</button>
+        </div>
+
+        <div class="invoice-content" id="invoiceContent">
+            <div class="invoice-header-info">
+                <div class="company-info">
+                    <h2>StockMaster</h2>
+                    <p>Gestion de stock professionnelle</p>
+                    <p>Boutique: <span id="invoiceBoutique"></span></p>
+                </div>
+                
+                <div class="invoice-info">
+                    <p>Facture n°: <span id="invoiceNumber"></span></p>
+                    <p>Date: <span id="invoiceDate"></span></p>
+                </div>
+            </div>
+
+            <div class="customer-details">
+                <h3>Informations du client</h3>
+                <p>Nom: <span id="invoiceCustomerName"></span></p>
+                <p>Téléphone: <span id="invoiceCustomerPhone"></span></p>
+                <p>Adresse: <span id="invoiceCustomerAddress"></span></p>
+            </div>
+
+            <div class="invoice-items">
+                <h3>Détails de la vente</h3>
+                <table id="invoiceItemsTable">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Quantité</th>
+                            <th>Prix unitaire</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les articles de la facture seront ajoutés ici -->
+                    </tbody>
+                </table>
+                
+                <div class="invoice-total">
+                    <h3>Total: <span id="invoiceTotalAmount"></span></h3>
+                </div>
+            </div>
+
+            <div class="invoice-footer">
+                <p>Merci pour votre confiance !</p>
+                <p>StockMaster - Solution de gestion de stock complète</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/facture.js"></script>
+</body>
+</html>

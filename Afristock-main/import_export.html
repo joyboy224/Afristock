@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Import/Export de données</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Import/Export de données - StockMaster</h1>
+            <div class="user-info">
+                <span id="boutiqueName">Boutique: </span>
+                <span id="modeInfo">Mode: </span>
+                <span id="userRole">Rôle: </span>
+                <button id="backBtn">Retour au tableau de bord</button>
+                <button id="logoutBtn">Déconnexion</button>
+            </div>
+        </header>
+
+        <div class="import-export-content">
+            <div class="import-section">
+                <h2>Importer des données</h2>
+                <div class="form-group">
+                    <label for="importFile">Sélectionner un fichier CSV :</label>
+                    <input type="file" id="importFile" accept=".csv">
+                </div>
+                <button id="importBtn">Importer les données</button>
+                <div id="importResult"></div>
+            </div>
+
+            <div class="export-section">
+                <h2>Exporter des données</h2>
+                <div class="form-group">
+                    <label for="exportType">Type d'export :</label>
+                    <select id="exportType">
+                        <option value="products">Produits</option>
+                        <option value="sales">Ventes</option>
+                        <option value="inventory">Stock</option>
+                    </select>
+                </div>
+                <button id="exportBtn">Exporter les données</button>
+                <div id="exportResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/users.js"></script>
+    <script src="js/import_export.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Enregistrer une vente</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Enregistrer une vente</h1>
+            <button id="backBtn">Retour au tableau de bord</button>
+        </header>
+
+        <div class="sale-content">
+            <div class="customer-info">
+                <h2>Informations du client</h2>
+                <div class="form-group">
+                    <label for="customerName">Nom du client :</label>
+                    <input type="text" id="customerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="customerPhone">Téléphone :</label>
+                    <input type="text" id="customerPhone">
+                </div>
+                <div class="form-group">
+                    <label for="customerAddress">Adresse :</label>
+                    <textarea id="customerAddress"></textarea>
+                </div>
+            </div>
+
+            <div class="product-selection">
+                <h2>Sélection des produits</h2>
+                <div class="product-search">
+                    <label for="productSearch">Rechercher un produit :</label>
+                    <input type="text" id="productSearch" placeholder="Tapez le nom d'un produit...">
+                    <select id="productSelect">
+                        <option value="">Sélectionnez un produit</option>
+                        <!-- Les options seront ajoutées dynamiquement -->
+                    </select>
+                </div>
+                
+                <div class="add-product-to-sale">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="selectedQuantity">Quantité :</label>
+                            <input type="number" id="selectedQuantity" min="1" value="1">
+                        </div>
+                        <button id="addProductToSaleBtn">Ajouter à la vente</button>
+                    </div>
+                </div>
+
+                <div class="sale-items">
+                    <h3>Produits sélectionnés</h3>
+                    <table id="saleItemsTable">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Quantité</th>
+                                <th>Prix unitaire</th>
+                                <th>Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Les produits de la vente seront ajoutés ici -->
+                        </tbody>
+                    </table>
+                    
+                    <div class="sale-total">
+                        <h3>Total : <span id="totalAmount">0 FCFA</span></h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sale-actions">
+                <button id="finalizeSaleBtn">Finaliser la vente</button>
+                <button id="cancelSaleBtn">Annuler la vente</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/vente.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Mouvements de stock</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mouvements de stock - StockMaster</h1>
+            <div class="user-info">
+                <span id="boutiqueName">Boutique: </span>
+                <span id="modeInfo">Mode: </span>
+                <span id="userRole">Rôle: </span>
+                <button id="backBtn">Retour au tableau de bord</button>
+                <button id="logoutBtn">Déconnexion</button>
+            </div>
+        </header>
+
+        <div class="stock-movements-content">
+            <div class="movement-filters">
+                <h2>Filtres</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="movementStartDate">Date de début :</label>
+                        <input type="date" id="movementStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="movementEndDate">Date de fin :</label>
+                        <input type="date" id="movementEndDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="productFilter">Produit :</label>
+                        <select id="productFilter">
+                            <option value="">Tous les produits</option>
+                            <!-- Les options seront ajoutées dynamiquement -->
+                        </select>
+                    </div>
+                </div>
+                <button id="filterMovementsBtn">Filtrer</button>
+            </div>
+
+            <div class="movements-list">
+                <h2>Liste des mouvements</h2>
+                <table id="movementsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Produit</th>
+                            <th>Type</th>
+                            <th>Quantité</th>
+                            <th>Stock avant</th>
+                            <th>Stock après</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les mouvements seront ajoutés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/users.js"></script>
+    <script src="js/stock_movements.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster - Tableau de bord</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Tableau de bord - StockMaster</h1>
+            <div class="user-info">
+                <span id="boutiqueName">Boutique: </span>
+                <span id="modeInfo">Mode: </span>
+                <span id="userRole">Rôle: </span>
+                <button id="manageUsersBtn" style="display: none;">Gérer les utilisateurs</button>
+                <button id="logoutBtn">Déconnexion</button>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Produits</h3>
+                    <span id="totalProducts">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Valeur du stock</h3>
+                    <span id="stockValue">0 FCFA</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Alertes</h3>
+                    <span id="lowStockAlerts">0</span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="addProductBtn">Ajouter un produit</button>
+                <button id="sellProductBtn">Enregistrer une vente</button>
+                <button id="viewInvoicesBtn">Voir les factures</button>
+                <button id="viewReportsBtn">Voir les rapports</button>
+                <button id="importExportBtn">Import/Export</button>
+                <button id="viewStockMovementsBtn">Mouvements de stock</button>
+            </div>
+
+            <div class="product-list">
+                <h2>Produits en stock</h2>
+                <table id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Marque</th>
+                            <th>Prix d'achat</th>
+                            <th>Prix de vente</th>
+                            <th>Quantité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les produits seront ajoutés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/users.js"></script>
+    <script src="js/produit.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Afficher le rôle de l'utilisateur
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = userManagement.getCurrentUser();
+            if (user) {
+                document.getElementById('userRole').textContent = `Rôle: ${user.role === 'admin' ? 'Administrateur' : 'Vendeur'}`;
+                
+                // Afficher le bouton de gestion des utilisateurs si l'utilisateur est admin
+                if (user.role === 'admin') {
+                    document.getElementById('manageUsersBtn').style.display = 'inline-block';
+                }
+            }
+            
+            // Gestion du bouton "Gérer les utilisateurs"
+            document.getElementById('manageUsersBtn').addEventListener('click', function() {
+                window.location.href = 'manage_users.html';
+            });
+        });
+    </script>
+</body>
+</html>
