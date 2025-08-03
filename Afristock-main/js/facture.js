@@ -1,8 +1,10 @@
 // Gestion des factures
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Afficher la facture
-    displayInvoice();
+    // Afficher la facture uniquement si l'élément existe
+    if (document.querySelector('.invoice-content')) {
+        displayInvoice();
+    }
     
     // Bouton d'impression
     const printBtn = document.getElementById('printBtn');
@@ -15,16 +17,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Bouton "Voir les factures"
     const viewInvoicesBtn = document.getElementById('viewInvoicesBtn');
     if (viewInvoicesBtn) {
+        console.log('Attaching click event to viewInvoicesBtn');
         viewInvoicesBtn.addEventListener('click', function() {
-            // Pour l'instant, on redirige vers la page de facture avec la dernière facture
-            // Dans une vraie application, il y aurait une page listant toutes les factures
-            const invoice = getCurrentInvoice();
-            if (invoice) {
-                sessionStorage.setItem('currentInvoice', JSON.stringify(invoice));
-                window.location.href = 'facture.html';
-            } else {
-                alert('Aucune facture disponible');
-            }
+            console.log('viewInvoicesBtn clicked');
+            // Rediriger vers la page listant toutes les factures
+            window.location.href = 'factures.html';
         });
     }
 });

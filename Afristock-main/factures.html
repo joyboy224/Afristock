@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StockMaster - Liste des factures</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Liste des factures</h1>
+            <button id="backBtn">Retour au tableau de bord</button>
+        </header>
+
+        <div class="invoice-list">
+            <table id="invoicesTable">
+                <thead>
+                    <tr>
+                        <th>Numéro</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Montant total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Factures ajoutées dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/facture.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const backBtn = document.getElementById('backBtn');
+            backBtn.addEventListener('click', function () {
+                window.location.href = 'dashboard.html';
+            });
+
+            // Afficher la liste des factures
+            const invoices = getInvoices();
+            const tbody = document.querySelector('#invoicesTable tbody');
+            tbody.innerHTML = '';
+
+            invoices.forEach(invoice => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${invoice.id}</td>
+                    <td>${invoice.date}</td>
+                    <td>${invoice.customerName}</td>
+                    <td>${invoice.totalAmount} FCFA</td>
+                    <td><button class="view-invoice-btn" data-id="${invoice.id}">Voir</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Gestion du clic sur "Voir" pour afficher la facture
+            document.querySelectorAll('.view-invoice-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const invoiceId = this.getAttribute('data-id');
+                    const invoice = invoices.find(inv => inv.id === invoiceId);
+                    if (invoice) {
+                        sessionStorage.setItem('currentInvoice', JSON.stringify(invoice));
+                        window.location.href = 'facture.html';
+                    } else {
+                        alert('Facture non trouvée');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

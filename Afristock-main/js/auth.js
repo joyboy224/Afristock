@@ -22,19 +22,23 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const boutiqueId = document.getElementById('boutiqueId').value;
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
             // Vérification avec le système d'utilisateurs
-            const user = userManagement.authenticateUser(boutiqueId, password);
+            const user = userManagement.authenticateUser(username, password);
             if (user) {
                 // Stocker les informations de connexion
                 localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('boutiqueId', boutiqueId);
+                localStorage.setItem('username', username);
                 userManagement.setCurrentUser(user);
                 
-                // Rediriger vers le tableau de bord
-                window.location.href = 'dashboard.html';
+                // Rediriger vers la page de choix du mode si non sélectionné
+                if (!localStorage.getItem('selectedMode')) {
+                    window.location.href = 'choose_mode.html';
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
             } else {
                 alert('Identifiants invalides');
             }

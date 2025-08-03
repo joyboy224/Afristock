@@ -49,6 +49,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Bouton "Vente" (Enregistrer une vente)
+    const sellProductBtn = document.getElementById('sellProductBtn');
+    if (sellProductBtn) {
+        sellProductBtn.addEventListener('click', function() {
+            window.location.href = 'vente.html';
+        });
+    }
+    
     // Bouton "Import/Export"
     const importExportBtn = document.getElementById('importExportBtn');
     if (importExportBtn) {
@@ -158,7 +166,7 @@ function saveProduct() {
                 const movementType = quantityDiff > 0 ? 'entry' : 'exit';
                 
                 // Enregistrer le mouvement de stock
-                recordStockMovement(productId, movementType, Math.abs(quantityDiff), stockBefore, stockAfter);
+                window.recordStockMovement(productId, movementType, Math.abs(quantityDiff), stockBefore, stockAfter);
             }
             
             products[index] = {
@@ -187,7 +195,7 @@ function saveProduct() {
         products.push(newProduct);
         
         // Enregistrer le mouvement de stock pour l'ajout initial
-        recordStockMovement(newProduct.id, 'entry', quantity, 0, quantity);
+        window.recordStockMovement(newProduct.id, 'entry', quantity, 0, quantity);
     }
     
     // Sauvegarder les produits

@@ -49,6 +49,20 @@ document.addEventListener('DOMContentLoaded', function() {
         modeInfoElement.textContent = `Mode: ${modeText}`;
     }
 });
+// Création d'un utilisateur admin par défaut
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier s'il y a des utilisateurs existants
+    const users = userManagement.getUsers();
+    // Si aucun utilisateur n'existe, créer un admin par défaut
+    if (users.length === 0) {
+        try {
+            userManagement.addUser({username: "admin", password: "admin123", role: "admin"});
+            console.log("Utilisateur administrateur par défaut créé : admin / admin123");
+        } catch (e) {
+            console.log("Erreur lors de la création de l'administrateur par défaut");
+        }
+    }
+});
 
 // Fonction pour afficher les utilisateurs
 function displayUsers() {
@@ -133,14 +147,20 @@ function getUsers() {
     if (mode === 'local') {
         // Pour le mode local, utiliser localStorage
         const key = `users_${boutiqueId}`;
+        console.log(`[getUsers] Mode local - Clé: ${key}`);
         const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+        const users = data ? JSON.parse(data) : [];
+        console.log(`[getUsers] Mode local - Utilisateurs:`, users);
+        return users;
     } else {
         // Pour le mode centralisé, cela viendrait d'un serveur
         // Dans cette implémentation, nous simulons avec localStorage
         const key = `users_central`;
+        console.log(`[getUsers] Mode centralisé - Clé: ${key}`);
         const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+        const users = data ? JSON.parse(data) : [];
+        console.log(`[getUsers] Mode centralisé - Utilisateurs:`, users);
+        return users;
     }
 }
 

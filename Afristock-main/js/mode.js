@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Vérifier si un mode est déjà sélectionné
     const selectedMode = localStorage.getItem('selectedMode');
     if (selectedMode) {
-        // Rediriger vers le tableau de bord si le mode est déjà choisi
-        window.location.href = 'dashboard.html';
+        // Rediriger vers la page de connexion si le mode est déjà choisi
+        window.location.href = 'login.html';
     }
     
     // Boutons de choix de mode
@@ -35,8 +35,8 @@ function selectMode(mode) {
         initializeLocalData();
     }
     
-    // Rediriger vers le tableau de bord
-    window.location.href = 'dashboard.html';
+    // Rediriger vers la page de connexion
+    window.location.href = 'login.html';
 }
 
 // Initialiser les données locales
