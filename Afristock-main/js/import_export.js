@@ -1,304 +1,436 @@
-// Gestion de l'import et de l'export de données
+// Gestion de l'importation et de l'exportation de données
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Afficher le nom de la boutique
-    const boutiqueNameElement = document.getElementById('boutiqueName');
-    if (boutiqueNameElement) {
-        const boutiqueId = localStorage.getItem('boutiqueId');
-        if (boutiqueId) {
-            boutiqueNameElement.textContent = `Boutique: ${boutiqueId}`;
-        }
-    }
+// Exporter les données au format JSON
+function exportDataToJSON(data, filename) {
+    // Convertir les données en JSON
+    const json = JSON.stringify(data, null, 2);
     
-    // Afficher le mode
-    const modeInfoElement = document.getElementById('modeInfo');
-    if (modeInfoElement) {
-        const mode = localStorage.getItem('selectedMode') || 'local';
-        const modeText = mode === 'local' ? 'Stock individuel (local)' : 'Stock partagé (centralisé)';
-        modeInfoElement.textContent = `Mode: ${modeText}`;
-    }
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'data.json';
+    a.click();
+    window.URL.revokeObjectURL(url);
     
-    // Afficher le rôle de l'utilisateur
-    const user = userManagement.getCurrentUser();
-    if (user) {
-        document.getElementById('userRole').textContent = `Rôle: ${user.role === 'admin' ? 'Administrateur' : 'Vendeur'}`;
-    }
-    
-    // Bouton retour au tableau de bord
-    const backBtn = document.getElementById('backBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // Bouton de déconnexion
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('boutiqueId');
-            localStorage.removeItem('selectedMode');
-            sessionStorage.removeItem('currentUser');
-            userManagement.logoutUser();
-            window.location.href = 'login.html';
-        });
-    }
-    
-    // Bouton d'import
-    const importBtn = document.getElementById('importBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', importData);
-    }
-    
-    // Bouton d'export
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportData);
-    }
-});
+    console.log(`Données exportées: ${filename || 'data.json'}`);
+}
 
-// Fonction pour importer des données
-function importData() {
-    const fileInput = document.getElementById('importFile');
-    const importResult = document.getElementById('importResult');
-    
-    if (!fileInput.files || !fileInput.files[0]) {
-        importResult.innerHTML = '<p style="color: red;">Veuillez sélectionner un fichier CSV</p>';
-        return;
-    }
-    
-    const file = fileInput.files[0];
+// Importer les données depuis un fichier JSON
+function importDataFromJSON(file, callback) {
     const reader = new FileReader();
-    
     reader.onload = function(e) {
         try {
-            const csv = e.target.result;
-            const data = parseCSV(csv);
-            const importedCount = importProducts(data);
-            
-            importResult.innerHTML = `<p style="color: green;">${importedCount} produits importés avec succès</p>`;
-            fileInput.value = '';
+            const data = JSON.parse(e.target.result);
+            callback(null, data);
         } catch (error) {
-            importResult.innerHTML = `<p style="color: red;">Erreur lors de l'import: ${error.message}</p>`;
+            callback(error, null);
         }
     };
-    
     reader.readAsText(file);
 }
 
-// Fonction pour parser un fichier CSV
-function parseCSV(csv) {
-    const lines = csv.split('\n');
-    const headers = lines[0].split(',').map(header => header.trim());
-    const data = [];
+// Exporter les produits au format CSV
+function exportProductsToCSV(products, filename) {
+    // Créer les en-têtes CSV
+    let csv = 'ID,Nom,Description,Prix,Quantité,Catégorie\n';
     
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        
-        const values = line.split(',');
-        const row = {};
-        
-        for (let j = 0; j < headers.length; j++) {
-            row[headers[j]] = values[j] ? values[j].trim() : '';
-        }
-        
-        data.push(row);
-    }
-    
-    return data;
-}
-
-// Fonction pour importer des produits
-function importProducts(productsData) {
-    let importedCount = 0;
-    
-    // Obtenir les produits existants
-    let existingProducts = getProducts();
-    
-    // Parcourir les produits à importer
-    productsData.forEach(product => {
-        // Vérifier si le produit existe déjà
-        const existingProduct = existingProducts.find(p => p.name === product.name);
-        
-        if (existingProduct) {
-            // Mettre à jour le produit existant
-            existingProduct.brand = product.brand || existingProduct.brand;
-            existingProduct.purchasePrice = parseFloat(product.purchasePrice) || existingProduct.purchasePrice;
-            existingProduct.sellingPrice = parseFloat(product.sellingPrice) || existingProduct.sellingPrice;
-            existingProduct.quantity = parseInt(product.quantity) || existingProduct.quantity;
-            existingProduct.dimensions = product.dimensions || existingProduct.dimensions;
-        } else {
-            // Ajouter un nouveau produit
-            const newProduct = {
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                name: product.name,
-                brand: product.brand || '',
-                purchasePrice: parseFloat(product.purchasePrice) || 0,
-                sellingPrice: parseFloat(product.sellingPrice) || 0,
-                quantity: parseInt(product.quantity) || 0,
-                dimensions: product.dimensions || '',
-                image: ''
-            };
-            existingProducts.push(newProduct);
-        }
-        
-        importedCount++;
-    });
-    
-    // Sauvegarder les produits
-    saveProducts(existingProducts);
-    
-    return importedCount;
-}
-
-// Fonction pour exporter des données
-function exportData() {
-    const exportType = document.getElementById('exportType').value;
-    const exportResult = document.getElementById('exportResult');
-    
-    try {
-        let csvContent = '';
-        let filename = '';
-        
-        switch (exportType) {
-            case 'products':
-                csvContent = exportProducts();
-                filename = 'produits.csv';
-                break;
-            case 'sales':
-                csvContent = exportSales();
-                filename = 'ventes.csv';
-                break;
-            case 'inventory':
-                csvContent = exportInventory();
-                filename = 'stock.csv';
-                break;
-            default:
-                throw new Error('Type d\'export non reconnu');
-        }
-        
-        // Créer un lien de téléchargement
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        exportResult.innerHTML = `<p style="color: green;">Fichier ${filename} téléchargé avec succès</p>`;
-    } catch (error) {
-        exportResult.innerHTML = `<p style="color: red;">Erreur lors de l'export: ${error.message}</p>`;
-    }
-}
-
-// Fonction pour exporter les produits
-function exportProducts() {
-    const products = getProducts();
-    
-    // Créer les en-têtes
-    let csv = 'name,brand,purchasePrice,sellingPrice,quantity,dimensions\n';
-    
-    // Ajouter les données
+    // Ajouter les données des produits
     products.forEach(product => {
-        csv += `"${product.name}","${product.brand}",${product.purchasePrice},${product.sellingPrice},${product.quantity},"${product.dimensions}"\n`;
+        csv += `"${product.id}","${product.name}","${product.description}","${product.price}","${product.quantity}","${product.category}"\n`;
     });
     
-    return csv;
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'products.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Produits exportés: ${filename || 'products.csv'}`);
 }
 
-// Fonction pour exporter les ventes
-function exportSales() {
-    const invoices = getInvoices();
+// Importer les produits depuis un fichier CSV
+function importProductsFromCSV(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            
+            // Ignorer la première ligne (en-têtes)
+            const products = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Diviser la ligne en champs
+                    const fields = line.split('","');
+                    
+                    // Nettoyer les guillemets
+                    const cleanedFields = fields.map(field => {
+                        return field.replace(/^"|"$/g, '');
+                    });
+                    
+                    // Créer un objet produit
+                    const product = {
+                        id: cleanedFields[0],
+                        name: cleanedFields[1],
+                        description: cleanedFields[2],
+                        price: parseFloat(cleanedFields[3]),
+                        quantity: parseInt(cleanedFields[4]),
+                        category: cleanedFields[5]
+                    };
+                    
+                    products.push(product);
+                }
+            }
+            
+            callback(null, products);
+        } catch (error) {
+            callback(error, null);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Exporter les ventes au format CSV
+function exportSalesToCSV(sales, filename) {
+    // Créer les en-têtes CSV
+    let csv = 'ID,Client,Total,Date,Statut\n';
     
-    // Créer les en-têtes
-    let csv = 'date,customerName,totalAmount,items\n';
+    // Ajouter les données des ventes
+    sales.forEach(sale => {
+        csv += `"${sale.id}","${sale.customerName}","${sale.total}","${sale.date}","${sale.status}"\n`;
+    });
     
-    // Ajouter les données
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'sales.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Ventes exportées: ${filename || 'sales.csv'}`);
+}
+
+// Importer les ventes depuis un fichier CSV
+function importSalesFromCSV(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            
+            // Ignorer la première ligne (en-têtes)
+            const sales = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Diviser la ligne en champs
+                    const fields = line.split('","');
+                    
+                    // Nettoyer les guillemets
+                    const cleanedFields = fields.map(field => {
+                        return field.replace(/^"|"$/g, '');
+                    });
+                    
+                    // Créer un objet vente
+                    const sale = {
+                        id: cleanedFields[0],
+                        customerName: cleanedFields[1],
+                        total: parseFloat(cleanedFields[2]),
+                        date: cleanedFields[3],
+                        status: cleanedFields[4]
+                    };
+                    
+                    sales.push(sale);
+                }
+            }
+            
+            callback(null, sales);
+        } catch (error) {
+            callback(error, null);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Exporter les utilisateurs au format CSV
+function exportUsersToCSV(users, filename) {
+    // Créer les en-têtes CSV
+    let csv = 'ID,Nom d\'utilisateur,Rôle,Email\n';
+    
+    // Ajouter les données des utilisateurs
+    users.forEach(user => {
+        csv += `"${user.id}","${user.username}","${user.role}","${user.email}"\n`;
+    });
+    
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'users.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Utilisateurs exportés: ${filename || 'users.csv'}`);
+}
+
+// Importer les utilisateurs depuis un fichier CSV
+function importUsersFromCSV(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            
+            // Ignorer la première ligne (en-têtes)
+            const users = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Diviser la ligne en champs
+                    const fields = line.split('","');
+                    
+                    // Nettoyer les guillemets
+                    const cleanedFields = fields.map(field => {
+                        return field.replace(/^"|"$/g, '');
+                    });
+                    
+                    // Créer un objet utilisateur
+                    const user = {
+                        id: cleanedFields[0],
+                        username: cleanedFields[1],
+                        role: cleanedFields[2],
+                        email: cleanedFields[3]
+                    };
+                    
+                    users.push(user);
+                }
+            }
+            
+            callback(null, users);
+        } catch (error) {
+            callback(error, null);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Exporter les factures au format CSV
+function exportInvoicesToCSV(invoices, filename) {
+    // Créer les en-têtes CSV
+    let csv = 'ID,Vente,Client,Total,Date,Statut\n';
+    
+    // Ajouter les données des factures
     invoices.forEach(invoice => {
-        const items = invoice.items.map(item => 
-            `${item.productName}(${item.quantity})`
-        ).join(';');
+        csv += `"${invoice.id}","${invoice.saleId}","${invoice.customerName}","${invoice.total}","${invoice.date}","${invoice.status}"\n`;
+    });
+    
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'invoices.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Factures exportées: ${filename || 'invoices.csv'}`);
+}
+
+// Importer les factures depuis un fichier CSV
+function importInvoicesFromCSV(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            
+            // Ignorer la première ligne (en-têtes)
+            const invoices = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Diviser la ligne en champs
+                    const fields = line.split('","');
+                    
+                    // Nettoyer les guillemets
+                    const cleanedFields = fields.map(field => {
+                        return field.replace(/^"|"$/g, '');
+                    });
+                    
+                    // Créer un objet facture
+                    const invoice = {
+                        id: cleanedFields[0],
+                        saleId: cleanedFields[1],
+                        customerName: cleanedFields[2],
+                        total: parseFloat(cleanedFields[3]),
+                        date: cleanedFields[4],
+                        status: cleanedFields[5]
+                    };
+                    
+                    invoices.push(invoice);
+                }
+            }
+            
+            callback(null, invoices);
+        } catch (error) {
+            callback(error, null);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Exporter les mouvements de stock au format CSV
+function exportStockMovementsToCSV(movements, filename) {
+    // Créer les en-têtes CSV
+    let csv = 'ID,Produit,Type,Quantité,Date,Raison\n';
+    
+    // Ajouter les données des mouvements
+    movements.forEach(movement => {
+        csv += `"${movement.id}","${movement.productName}","${movement.type}","${movement.quantity}","${movement.date}","${movement.reason}"\n`;
+    });
+    
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'stock_movements.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Mouvements de stock exportés: ${filename || 'stock_movements.csv'}`);
+}
+
+// Importer les mouvements de stock depuis un fichier CSV
+function importStockMovementsFromCSV(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const lines = csv.split('\n');
+            
+            // Ignorer la première ligne (en-têtes)
+            const movements = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Diviser la ligne en champs
+                    const fields = line.split('","');
+                    
+                    // Nettoyer les guillemets
+                    const cleanedFields = fields.map(field => {
+                        return field.replace(/^"|"$/g, '');
+                    });
+                    
+                    // Créer un objet mouvement
+                    const movement = {
+                        id: cleanedFields[0],
+                        productName: cleanedFields[1],
+                        type: cleanedFields[2],
+                        quantity: parseInt(cleanedFields[3]),
+                        date: cleanedFields[4],
+                        reason: cleanedFields[5]
+                    };
+                    
+                    movements.push(movement);
+                }
+            }
+            
+            callback(null, movements);
+        } catch (error) {
+            callback(error, null);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Exporter toutes les données de l'application
+function exportAllData(filename) {
+    const allData = {
+        products: window.produit.getAllProducts(),
+        sales: window.vente.getAllSales(),
+        users: window.userManagement.getAllUsers(),
+        invoices: window.facture.getAllInvoices(),
+        stockMovements: window.stockMovements.getAllStockMovements()
+    };
+    
+    exportDataToJSON(allData, filename || 'all_data.json');
+}
+
+// Importer toutes les données de l'application
+function importAllData(file, callback) {
+    importDataFromJSON(file, (error, data) => {
+        if (error) {
+            callback(error, null);
+            return;
+        }
         
-        csv += `"${invoice.date}","${invoice.customerName}",${invoice.totalAmount},"${items}"\n`;
+        try {
+            // Importer les produits
+            if (data.products) {
+                data.products.forEach(product => {
+                    window.produit.createProduct(product);
+                });
+            }
+            
+            // Importer les ventes
+            if (data.sales) {
+                data.sales.forEach(sale => {
+                    window.vente.createSale(sale);
+                });
+            }
+            
+            // Importer les utilisateurs
+            if (data.users) {
+                data.users.forEach(user => {
+                    window.userManagement.createUser(user.username, user.password, user.role);
+                });
+            }
+            
+            // Importer les factures
+            if (data.invoices) {
+                data.invoices.forEach(invoice => {
+                    window.facture.createInvoice(invoice);
+                });
+            }
+            
+            // Importer les mouvements de stock
+            if (data.stockMovements) {
+                data.stockMovements.forEach(movement => {
+                    window.stockMovements.createStockMovement(movement);
+                });
+            }
+            
+            callback(null, data);
+        } catch (error) {
+            callback(error, null);
+        }
     });
-    
-    return csv;
 }
 
-// Fonction pour exporter le stock
-function exportInventory() {
-    const products = getProducts();
-    
-    // Créer les en-têtes
-    let csv = 'name,brand,quantity,purchasePrice,totalValue\n';
-    
-    // Ajouter les données
-    products.forEach(product => {
-        const totalValue = product.purchasePrice * product.quantity;
-        csv += `"${product.name}","${product.brand}",${product.quantity},${product.purchasePrice},${totalValue}\n`;
-    });
-    
-    return csv;
-}
-
-// Fonction pour obtenir les produits (copiée de produit.js)
-function getProducts() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `products_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `products_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
-
-// Fonction pour sauvegarder les produits (copiée de produit.js)
-function saveProducts(products) {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `products_${boutiqueId}`;
-        localStorage.setItem(key, JSON.stringify(products));
-    } else {
-        // Pour le mode centralisé, cela serait envoyé à un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `products_central`;
-        localStorage.setItem(key, JSON.stringify(products));
-    }
-}
-
-// Fonction pour obtenir les factures (copiée de facture.js)
-function getInvoices() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `invoices_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `invoices_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
+// Exporter les fonctions pour une utilisation dans d'autres fichiers
+window.importExport = {
+    exportDataToJSON,
+    importDataFromJSON,
+    exportProductsToCSV,
+    importProductsFromCSV,
+    exportSalesToCSV,
+    importSalesFromCSV,
+    exportUsersToCSV,
+    importUsersFromCSV,
+    exportInvoicesToCSV,
+    importInvoicesFromCSV,
+    exportStockMovementsToCSV,
+    importStockMovementsFromCSV,
+    exportAllData,
+    importAllData
+};

@@ -1,8 +1,8 @@
-# StockMaster - Application de Gestion de Stock
+# Afristock - Application de Gestion de Stock Avancée
 
 ## 📝 Description
 
-StockMaster est une application complète de gestion de stock conçue pour les entreprises avec une ou plusieurs boutiques. Elle permet une gestion claire et efficace des produits, ventes, alertes et factures, avec la possibilité de fonctionner en mode local ou en ligne.
+Afristock est une application complète de gestion de stock conçue pour les entreprises avec une ou plusieurs boutiques. Elle permet une gestion claire et efficace des produits, ventes, alertes et factures, avec la possibilité de fonctionner en mode local ou centralisé. L'application inclut des fonctionnalités avancées de sécurité, de gestion des rôles, de notifications en temps réel et de file d'attente d'emails.
 
 ## 🎯 Fonctionnalités
 
@@ -33,86 +33,39 @@ StockMaster est une application complète de gestion de stock conçue pour les e
 - Chaque boutique a sa propre configuration et ses données
 - Choix de mode (individuel ou partagé) stocké et reconnu automatiquement
 
-### 🔹 Authentification & rôles
-- Connexion obligatoire
-- Rôles possibles : `admin` (gère tout), `vendeur` (ventes uniquement)
-- Journalisation des actions (optionnel)
-
-## 🚀 Installation
-
-1. Clonez le dépôt :
-```bash
-git clone https://github.com/votre-compte/stockmaster.git
-```
-
-2. Ouvrez le fichier `login.html` dans votre navigateur
-
-3. Connectez-vous avec les identifiants de votre boutique
-
-## 🖥️ Utilisation
-
-### 🔑 Connexion
-Au démarrage, l'utilisateur doit se connecter avec :
-- Son **identifiant de boutique** (ex : `BoutiqueDakar`)
-- Un **mot de passe**
-
-### ⚙️ Choix du mode de fonctionnement
-Une fois connecté, il peut choisir :
-- 🔹 **Mode "Stock individuel"** : La boutique utilise un fichier local (ou localStorage)
-- 🔸 **Mode "Stock partagé"** : La boutique utilise le même stock que d'autres via un serveur
-
-## 📁 Structure du projet
-
-```
-/stockmaster/
-├── login.html               ← page de connexion
-├── choose_mode.html         ← choisir "stock individuel" ou "stock partagé"
-├── dashboard.html           ← tableau de bord des produits
-├── add_product.html         ← formulaire d'ajout/modif produit
-├── vente.html               ← interface pour faire une vente
-├── facture.html             ← facture générée automatiquement
-│
-├── js/
-│   ├── auth.js              ← gestion de la connexion
-│   ├── mode.js              ← choix de mode
-│   ├── produit.js           ← ajout/modif produits
-│   ├── vente.js             ← traitement des ventes
-│   ├── facture.js           ← génération facture
-│   ├── api.js               ← connexion au serveur (stock partagé)
-│
-├── css/
-│   └── style.css
-│
-├── data/
-│   ├── stock_boutique_dakar.json
-│   └── stock_boutique_thies.json
-```
-
-## 🛠️ Technologies utilisées
-
-- HTML5
-- CSS3
-- JavaScript (ES6+)
-- localStorage pour le stockage local
-
-## 📱 Compatibilité
-
-L'application est compatible avec tous les navigateurs modernes et fonctionne sur :
-- Ordinateurs de bureau
-- Tablettes
-- Smartphones
-
-## 🔐 Sécurité
-
-- Authentification locale (stock local) ou serveur (stock centralisé)
-- Les mots de passe sont stockés de manière sécurisée
+### 🔹 Authentification & gestion des rôles
+- Connexion obligatoire avec système JWT (JSON Web Token)
+- Rôles possibles :
+  - `admin` (gère tout)
+  - `manager` (gère les produits)
+  - `employee` (ventes uniquement)
+- Système de permissions granulaire par rôle
 - Journalisation des actions pour plus de traçabilité
 
-## 🤝 Support
+### 🔹 Notifications en temps réel
+- Système de notifications WebSocket (simulation)
+- Alertes instantanées pour les événements critiques
+- Interface utilisateur pour afficher les notifications
 
-Pour tout problème ou question, veuillez créer une issue sur GitHub ou contacter notre équipe de support.
+### 🔹 File d'attente d'emails
+- Système de file d'attente pour l'envoi d'emails
+- Gestion asynchrone des envois avec retry
+- Suivi des statuts d'envoi (envoyé, échoué, en attente)
 
-## 📄 Licence
+## 🔐 Spécification des rôles dans le système Afristock
 
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus d'informations.
-# Afristock
+### 👤 Rôle : ADMIN (👑)
+
+L'administrateur représente le **propriétaire ou le responsable d'entreprise**. Il a un accès **complet** à toutes les fonctionnalités.
+
+#### ✅ Ce que l'admin peut faire :
+
+##### 🔒 Connexion & Profil
+- Se connecter au système via identifiants admin
+- Modifier ses informations personnelles (nom, mot de passe)
+- Se déconnecter
+
+##### 🧑‍💼 Gestion des utilisateurs
+- Créer un **nouveau compte vendeur**
+- Modifier un compte vendeur (nom, identifiant, mot de passe, rôle)
+- Supprimer un compte vendeur

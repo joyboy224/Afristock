@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Users</title>
+</head>
+<body>
+    <h1>Users in localStorage</h1>
+    <div id="users"></div>
+    <button onclick="clearUsers()">Clear Users</button>
+    <button onclick="addDefaultAdmin()">Add Default Admin</button>
+    <script>
+        function checkUsers() {
+            const users = localStorage.getItem('users');
+            document.getElementById('users').innerHTML = users ? `<pre>${JSON.stringify(JSON.parse(users), null, 2)}</pre>` : 'No users found';
+        }
+        
+        function clearUsers() {
+            localStorage.removeItem('users');
+            checkUsers();
+        }
+        
+        function addDefaultAdmin() {
+            const users = [
+                { 
+                    username: 'admin', 
+                    password: 'admin123', 
+                    role: 'admin',
+                    email: 'admin@afristock.com'
+                }
+            ];
+            localStorage.setItem('users', JSON.stringify(users));
+            checkUsers();
+        }
+        
+        // Check users on page load
+        checkUsers();
+    </script>
+</body>
+</html>

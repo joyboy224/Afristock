@@ -1,216 +1,284 @@
 // Gestion des mouvements de stock
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Afficher le nom de la boutique
-    const boutiqueNameElement = document.getElementById('boutiqueName');
-    if (boutiqueNameElement) {
-        const boutiqueId = localStorage.getItem('boutiqueId');
-        if (boutiqueId) {
-            boutiqueNameElement.textContent = `Boutique: ${boutiqueId}`;
-        }
+// Données des mouvements de stock (simulation de base de données locale)
+let localStockMovements = [
+    { 
+        id: '1', 
+        productId: '1',
+        productName: 'Produit 1',
+        type: 'incoming',
+        quantity: 100,
+        date: '2023-01-01',
+        reason: 'Réapprovisionnement'
+    },
+    { 
+        id: '2', 
+        productId: '1',
+        productName: 'Produit 1',
+        type: 'outgoing',
+        quantity: 50,
+        date: '2023-01-05',
+        reason: 'Vente'
+    },
+    { 
+        id: '3', 
+        productId: '2',
+        productName: 'Produit 2',
+        type: 'incoming',
+        quantity: 200,
+        date: '2023-01-02',
+        reason: 'Réapprovisionnement'
+    },
+    { 
+        id: '4', 
+        productId: '2',
+        productName: 'Produit 2',
+        type: 'outgoing',
+        quantity: 170,
+        date: '2023-01-06',
+        reason: 'Vente'
     }
-    
-    // Afficher le mode
-    const modeInfoElement = document.getElementById('modeInfo');
-    if (modeInfoElement) {
-        const mode = localStorage.getItem('selectedMode') || 'local';
-        const modeText = mode === 'local' ? 'Stock individuel (local)' : 'Stock partagé (centralisé)';
-        modeInfoElement.textContent = `Mode: ${modeText}`;
-    }
-    
-    // Afficher le rôle de l'utilisateur
-    const user = userManagement.getCurrentUser();
-    if (user) {
-        document.getElementById('userRole').textContent = `Rôle: ${user.role === 'admin' ? 'Administrateur' : 'Vendeur'}`;
-    }
-    
-    // Bouton retour au tableau de bord
-    const backBtn = document.getElementById('backBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // Bouton de déconnexion
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('boutiqueId');
-            localStorage.removeItem('selectedMode');
-            sessionStorage.removeItem('currentUser');
-            userManagement.logoutUser();
-            window.location.href = 'login.html';
-        });
-    }
-    
-    // Remplir la liste déroulante des produits
-    populateProductFilter();
-    
-    // Bouton de filtrage
-    const filterMovementsBtn = document.getElementById('filterMovementsBtn');
-    if (filterMovementsBtn) {
-        filterMovementsBtn.addEventListener('click', filterMovements);
-    }
-    
-    // Définir les dates par défaut (dernier mois)
-    const today = new Date();
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    document.getElementById('movementStartDate').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('movementEndDate').value = today.toISOString().split('T')[0];
-    
-    // Afficher tous les mouvements par défaut
-    displayMovements();
-});
+];
 
-// Fonction pour remplir la liste déroulante des produits
-function populateProductFilter() {
-    const products = getProducts();
-    const productFilter = document.getElementById('productFilter');
+// Initialiser la gestion des mouvements de stock
+function initStockMovements() {
+    // Charger les mouvements de stock depuis le localStorage
+    const savedStockMovements = localStorage.getItem('stockMovements');
+    if (savedStockMovements) {
+        localStockMovements = JSON.parse(savedStockMovements);
+    }
     
-    // Ajouter chaque produit à la liste déroulante
-    products.forEach(product => {
-        const option = document.createElement('option');
-        option.value = product.id;
-        option.textContent = product.name;
-        productFilter.appendChild(option);
-    });
+    console.log('Gestion des mouvements de stock initialisée');
 }
 
-// Fonction pour filtrer les mouvements
-function filterMovements() {
-    displayMovements();
+// Obtenir tous les mouvements de stock
+function getAllStockMovements() {
+    return localStockMovements;
 }
 
-// Fonction pour afficher les mouvements
-function displayMovements() {
-    const startDate = document.getElementById('movementStartDate').value;
-    const endDate = document.getElementById('movementEndDate').value;
-    const productId = document.getElementById('productFilter').value;
-    
-    // Obtenir les mouvements de stock
-    const movements = getStockMovements();
-    
-    // Filtrer les mouvements
-    const filteredMovements = movements.filter(movement => {
-        // Filtrer par date
-        if (startDate && new Date(movement.date) < new Date(startDate)) {
-            return false;
-        }
-        
-        if (endDate && new Date(movement.date) > new Date(endDate)) {
-            return false;
-        }
-        
-        // Filtrer par produit
-        if (productId && movement.productId !== productId) {
-            return false;
-        }
-        
-        return true;
-    });
-    
-    // Afficher les mouvements dans le tableau
-    const tableBody = document.querySelector('#movementsTable tbody');
-    tableBody.innerHTML = '';
-    
-    filteredMovements.forEach(movement => {
-        const product = getProductById(movement.productId);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${movement.date}</td>
-            <td>${product ? product.name : 'Produit inconnu'}</td>
-            <td>${movement.type === 'entry' ? 'Entrée' : 'Sortie'}</td>
-            <td>${movement.quantity}</td>
-            <td>${movement.stockBefore}</td>
-            <td>${movement.stockAfter}</td>
-        `;
-        tableBody.appendChild(row);
-    });
+// Obtenir un mouvement de stock par ID
+function getStockMovementById(id) {
+    return localStockMovements.find(m => m.id === id);
 }
 
-// Fonction pour obtenir les mouvements de stock
-function getStockMovements() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
+// Créer un nouveau mouvement de stock
+function createStockMovement(movementData) {
+    // Générer un ID unique
+    const newId = (localStockMovements.length + 1).toString();
     
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `movements_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `movements_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
-
-// Fonction pour enregistrer un mouvement de stock
-function recordStockMovement(productId, type, quantity, stockBefore, stockAfter) {
-    const movement = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        productId: productId,
-        type: type, // 'entry' ou 'exit'
-        quantity: quantity,
-        stockBefore: stockBefore,
-        stockAfter: stockAfter,
-        date: new Date().toISOString().split('T')[0]
+    // Créer le nouveau mouvement
+    const newMovement = {
+        id: newId,
+        ...movementData,
+        date: new Date().toISOString().split('T')[0] // Date actuelle au format YYYY-MM-DD
     };
     
-    // Obtenir les mouvements existants
-    const movements = getStockMovements();
+    // Ajouter à la liste des mouvements
+    localStockMovements.push(newMovement);
     
-    // Ajouter le nouveau mouvement
-    movements.push(movement);
+    // Sauvegarder dans le localStorage
+    saveStockMovements();
     
-    // Sauvegarder les mouvements
-    saveStockMovements(movements);
+    console.log(`Mouvement de stock créé: ${newId}`);
+    return newMovement;
 }
 
-// Fonction pour sauvegarder les mouvements de stock
-function saveStockMovements(movements) {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
+// Mettre à jour un mouvement de stock
+function updateStockMovement(movementId, updates) {
+    const movementIndex = localStockMovements.findIndex(m => m.id === movementId);
+    if (movementIndex !== -1) {
+        // Mettre à jour le mouvement
+        localStockMovements[movementIndex] = { ...localStockMovements[movementIndex], ...updates };
+        
+        // Sauvegarder dans le localStorage
+        saveStockMovements();
+        
+        console.log(`Mouvement de stock mis à jour: ${movementId}`);
+        return localStockMovements[movementIndex];
+    }
+    throw new Error('Mouvement de stock non trouvé');
+}
+
+// Supprimer un mouvement de stock
+function deleteStockMovement(movementId) {
+    const movementIndex = localStockMovements.findIndex(m => m.id === movementId);
+    if (movementIndex !== -1) {
+        // Supprimer le mouvement
+        const deletedMovement = localStockMovements.splice(movementIndex, 1)[0];
+        
+        // Sauvegarder dans le localStorage
+        saveStockMovements();
+        
+        console.log(`Mouvement de stock supprimé: ${deletedMovement.id}`);
+        return deletedMovement;
+    }
+    throw new Error('Mouvement de stock non trouvé');
+}
+
+// Filtrer les mouvements de stock par produit
+function filterStockMovementsByProduct(productId) {
+    return localStockMovements.filter(m => m.productId === productId);
+}
+
+// Filtrer les mouvements de stock par type
+function filterStockMovementsByType(type) {
+    return localStockMovements.filter(m => m.type === type);
+}
+
+// Filtrer les mouvements de stock par date
+function filterStockMovementsByDate(startDate, endDate) {
+    return localStockMovements.filter(m => {
+        const movementDate = new Date(m.date);
+        return movementDate >= new Date(startDate) && movementDate <= new Date(endDate);
+    });
+}
+
+// Obtenir le solde du stock pour un produit
+function getStockBalance(productId) {
+    const movements = filterStockMovementsByProduct(productId);
     
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `movements_${boutiqueId}`;
-        localStorage.setItem(key, JSON.stringify(movements));
-    } else {
-        // Pour le mode centralisé, cela serait envoyé à un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `movements_central`;
-        localStorage.setItem(key, JSON.stringify(movements));
+    let balance = 0;
+    movements.forEach(movement => {
+        if (movement.type === 'incoming') {
+            balance += movement.quantity;
+        } else if (movement.type === 'outgoing') {
+            balance -= movement.quantity;
+        }
+    });
+    
+    return balance;
+}
+
+// Obtenir le solde du stock pour tous les produits
+function getAllStockBalances() {
+    const products = window.produit.getAllProducts();
+    const balances = {};
+    
+    products.forEach(product => {
+        balances[product.id] = getStockBalance(product.id);
+    });
+    
+    return balances;
+}
+
+// Obtenir les mouvements de stock entrants
+function getIncomingStockMovements() {
+    return localStockMovements.filter(m => m.type === 'incoming');
+}
+
+// Obtenir les mouvements de stock sortants
+function getOutgoingStockMovements() {
+    return localStockMovements.filter(m => m.type === 'outgoing');
+}
+
+// Obtenir la quantité totale de stock entrant
+function getTotalIncomingStock() {
+    const incomingMovements = getIncomingStockMovements();
+    return incomingMovements.reduce((total, movement) => total + movement.quantity, 0);
+}
+
+// Obtenir la quantité totale de stock sortant
+function getTotalOutgoingStock() {
+    const outgoingMovements = getOutgoingStockMovements();
+    return outgoingMovements.reduce((total, movement) => total + movement.quantity, 0);
+}
+
+// Obtenir le solde total du stock
+function getTotalStockBalance() {
+    const totalIncoming = getTotalIncomingStock();
+    const totalOutgoing = getTotalOutgoingStock();
+    return totalIncoming - totalOutgoing;
+}
+
+// Rechercher des mouvements de stock
+function searchStockMovements(query) {
+    const lowerQuery = query.toLowerCase();
+    return localStockMovements.filter(m => 
+        m.productName.toLowerCase().includes(lowerQuery) ||
+        m.reason.toLowerCase().includes(lowerQuery) ||
+        m.id.includes(query)
+    );
+}
+
+// Obtenir les mouvements de stock récents
+function getRecentStockMovements(limit = 10) {
+    const sortedMovements = [...localStockMovements].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date);
+    });
+    
+    return sortedMovements.slice(0, limit);
+}
+
+// Sauvegarder les mouvements de stock dans le localStorage
+function saveStockMovements() {
+    localStorage.setItem('stockMovements', JSON.stringify(localStockMovements));
+}
+
+// Synchroniser les mouvements de stock avec le backend (mode centralisé)
+async function syncWithBackend() {
+    // Vérifier si nous sommes en mode centralisé
+    const mode = localStorage.getItem('selectedMode');
+    if (mode !== 'central') {
+        console.log('La synchronisation avec le backend n\'est disponible qu\'en mode centralisé');
+        return;
+    }
+    
+    // Obtenir le token JWT
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        throw new Error('Token d\'authentification manquant');
+    }
+    
+    try {
+        // Récupérer les mouvements de stock depuis le backend
+        const response = await fetch('http://localhost:4000/api/stock-movements', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors de la récupération des mouvements de stock');
+        }
+        
+        const backendStockMovements = await response.json();
+        
+        // Mettre à jour les mouvements de stock locaux
+        localStockMovements = backendStockMovements;
+        
+        // Sauvegarder dans le localStorage
+        saveStockMovements();
+        
+        console.log('Mouvements de stock synchronisés avec le backend');
+    } catch (error) {
+        console.error('Erreur lors de la synchronisation avec le backend:', error);
+        throw error;
     }
 }
 
-// Fonction pour obtenir un produit par son ID
-function getProductById(productId) {
-    const products = getProducts();
-    return products.find(product => product.id === productId);
-}
+// Initialiser la gestion des mouvements de stock
+initStockMovements();
 
-// Fonction pour obtenir les produits (copiée de produit.js)
-function getProducts() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `products_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `products_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
+// Exporter les fonctions pour une utilisation dans d'autres fichiers
+window.stockMovements = {
+    getAllStockMovements,
+    getStockMovementById,
+    createStockMovement,
+    updateStockMovement,
+    deleteStockMovement,
+    filterStockMovementsByProduct,
+    filterStockMovementsByType,
+    filterStockMovementsByDate,
+    getStockBalance,
+    getAllStockBalances,
+    getIncomingStockMovements,
+    getOutgoingStockMovements,
+    getTotalIncomingStock,
+    getTotalOutgoingStock,
+    getTotalStockBalance,
+    searchStockMovements,
+    getRecentStockMovements,
+    syncWithBackend
+};

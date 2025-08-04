@@ -1,301 +1,349 @@
-// Gestion des utilisateurs et des rôles
+// Gestion des utilisateurs
+class Users {
+    constructor() {
+        this.users = [];
+        this.currentUser = null;
+    }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Afficher la liste des utilisateurs
-    if (document.getElementById('usersTable')) {
-        displayUsers();
+    // Initialiser la gestion des utilisateurs
+    init() {
+        // Charger les utilisateurs depuis le localStorage
+        this.loadUsers();
+        
+        // Charger l'utilisateur courant
+        this.loadCurrentUser();
+        
+        console.log('Gestion des utilisateurs initialisée');
     }
-    
-    // Gestion du formulaire d'ajout d'utilisateur
-    const addUserForm = document.getElementById('addUserForm');
-    if (addUserForm) {
-        addUserForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            addUserFormHandler();
-        });
-    }
-    
-    // Bouton retour au tableau de bord
-    const backBtn = document.getElementById('backBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // Bouton de déconnexion
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            userManagement.logoutUser();
-            window.location.href = 'login.html';
-        });
-    }
-    
-    // Afficher le nom de la boutique
-    const boutiqueNameElement = document.getElementById('boutiqueName');
-    if (boutiqueNameElement) {
-        const boutiqueId = localStorage.getItem('boutiqueId');
-        if (boutiqueId) {
-            boutiqueNameElement.textContent = `Boutique: ${boutiqueId}`;
+
+    // Charger les utilisateurs depuis le localStorage
+    loadUsers() {
+        const usersData = localStorage.getItem('users');
+        if (usersData) {
+            this.users = JSON.parse(usersData);
         }
     }
-    
-    // Afficher le mode
-    const modeInfoElement = document.getElementById('modeInfo');
-    if (modeInfoElement) {
-        const mode = localStorage.getItem('selectedMode') || 'local';
-        const modeText = mode === 'local' ? 'Stock individuel (local)' : 'Stock partagé (centralisé)';
-        modeInfoElement.textContent = `Mode: ${modeText}`;
+
+    // Sauvegarder les utilisateurs dans le localStorage
+    saveUsers() {
+        localStorage.setItem('users', JSON.stringify(this.users));
     }
-});
-// Création d'un utilisateur admin par défaut
-document.addEventListener('DOMContentLoaded', function() {
-    // Vérifier s'il y a des utilisateurs existants
-    const users = userManagement.getUsers();
-    // Si aucun utilisateur n'existe, créer un admin par défaut
-    if (users.length === 0) {
-        try {
-            userManagement.addUser({username: "admin", password: "admin123", role: "admin"});
-            console.log("Utilisateur administrateur par défaut créé : admin / admin123");
-        } catch (e) {
-            console.log("Erreur lors de la création de l'administrateur par défaut");
+
+    // Charger l'utilisateur courant depuis le localStorage
+    loadCurrentUser() {
+        const currentUserData = localStorage.getItem('currentUser');
+        if (currentUserData) {
+            this.currentUser = JSON.parse(currentUserData);
         }
     }
-});
 
-// Fonction pour afficher les utilisateurs
-function displayUsers() {
-    const users = getUsers();
-    const tableBody = document.querySelector('#usersTable tbody');
-    
-    // Vider le tableau
-    tableBody.innerHTML = '';
-    
-    // Ajouter chaque utilisateur au tableau
-    users.forEach(user => {
-        const row = document.createElement('tr');
-        const createdDate = new Date(user.createdAt).toLocaleDateString('fr-FR');
-        row.innerHTML = `
-            <td>${user.username}</td>
-            <td>${user.role === 'admin' ? 'Administrateur' : 'Vendeur'}</td>
-            <td>${createdDate}</td>
-            <td>
-                <button class="edit-user-btn" data-id="${user.id}">Modifier</button>
-                <button class="delete-user-btn" data-id="${user.id}">Supprimer</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-    
-    // Ajouter les événements aux boutons
-    document.querySelectorAll('.edit-user-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.getAttribute('data-id');
-            editUser(userId);
-        });
-    });
-    
-    document.querySelectorAll('.delete-user-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.getAttribute('data-id');
-            deleteUser(userId);
-        });
-    });
-}
-
-// Fonction pour gérer le formulaire d'ajout d'utilisateur
-function addUserFormHandler() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const role = document.getElementById('role').value;
-    
-    try {
-        userManagement.addUser({ username, password, role });
-        alert('Utilisateur ajouté avec succès');
-        document.getElementById('addUserForm').reset();
-        displayUsers();
-    } catch (error) {
-        alert(error.message);
+    // Sauvegarder l'utilisateur courant dans le localStorage
+    saveCurrentUser() {
+        if (this.currentUser) {
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        }
     }
-}
 
-// Fonction pour modifier un utilisateur
-function editUser(userId) {
-    // Dans une vraie application, cela ouvrirait un formulaire de modification
-    alert('Fonction de modification non implémentée dans cette version');
-}
+    // Créer un nouvel utilisateur
+    createUser(username, password, role = 'vendeur') {
+        // Vérifier si l'utilisateur existe déjà
+        if (this.users.some(user => user.username === username)) {
+            throw new Error('Nom d\'utilisateur déjà utilisé');
+        }
 
-// Fonction pour supprimer un utilisateur
-function deleteUser(userId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        // Créer un nouvel utilisateur
+        const newUser = {
+            id: Date.now().toString(),
+            username,
+            password, // Note: Dans une application réelle, le mot de passe devrait être haché
+            role,
+            createdAt: new Date().toISOString()
+        };
+
+        this.users.push(newUser);
+        this.saveUsers();
+
+        console.log(`Utilisateur créé: ${username}`);
+        return newUser;
+    }
+
+    // Authentifier un utilisateur
+    authenticateUser(username, password) {
+        const user = this.users.find(u => u.username === username && u.password === password);
+        if (user) {
+            this.currentUser = user;
+            this.saveCurrentUser();
+            console.log(`Utilisateur authentifié: ${username}`);
+            return user;
+        }
+        return null;
+    }
+
+    // Déconnecter l'utilisateur courant
+    logoutUser() {
+        this.currentUser = null;
+        localStorage.removeItem('currentUser');
+        console.log('Utilisateur déconnecté');
+    }
+
+    // Mettre à jour un utilisateur
+    updateUser(userId, updates) {
+        const userIndex = this.users.findIndex(u => u.id === userId);
+        if (userIndex !== -1) {
+            // Mettre à jour l'utilisateur
+            this.users[userIndex] = { ...this.users[userIndex], ...updates };
+            this.saveUsers();
+
+            // Si c'est l'utilisateur courant, mettre à jour aussi
+            if (this.currentUser && this.currentUser.id === userId) {
+                this.currentUser = { ...this.currentUser, ...updates };
+                this.saveCurrentUser();
+            }
+
+            console.log(`Utilisateur mis à jour: ${userId}`);
+            return this.users[userIndex];
+        }
+        throw new Error('Utilisateur non trouvé');
+    }
+
+    // Supprimer un utilisateur
+    deleteUser(userId) {
+        const userIndex = this.users.findIndex(u => u.id === userId);
+        if (userIndex !== -1) {
+            // Supprimer l'utilisateur
+            const deletedUser = this.users.splice(userIndex, 1)[0];
+            this.saveUsers();
+
+            // Si c'est l'utilisateur courant, le déconnecter
+            if (this.currentUser && this.currentUser.id === userId) {
+                this.logoutUser();
+            }
+
+            console.log(`Utilisateur supprimé: ${deletedUser.username}`);
+            return deletedUser;
+        }
+        throw new Error('Utilisateur non trouvé');
+    }
+
+    // Obtenir tous les utilisateurs
+    getAllUsers() {
+        return this.users;
+    }
+
+    // Obtenir un utilisateur par ID
+    getUserById(userId) {
+        return this.users.find(u => u.id === userId);
+    }
+
+    // Obtenir un utilisateur par nom d'utilisateur
+    getUserByUsername(username) {
+        return this.users.find(u => u.username === username);
+    }
+
+    // Obtenir l'utilisateur courant
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    // Vérifier si un utilisateur est administrateur
+    isAdmin(user) {
+        return user && user.role === 'admin';
+    }
+
+    // Vérifier si l'utilisateur courant est administrateur
+    isCurrentUserAdmin() {
+        return this.currentUser && this.currentUser.role === 'admin';
+    }
+
+    // Vérifier si un utilisateur est vendeur
+    isSeller(user) {
+        return user && user.role === 'vendeur';
+    }
+
+    // Vérifier si l'utilisateur courant est vendeur
+    isCurrentUserSeller() {
+        return this.currentUser && this.currentUser.role === 'vendeur';
+    }
+
+    // Synchroniser les utilisateurs avec le backend (mode centralisé)
+    async syncWithBackend() {
+        // Vérifier si nous sommes en mode centralisé
+        const mode = localStorage.getItem('selectedMode');
+        if (mode !== 'central') {
+            console.log('La synchronisation avec le backend n\'est disponible qu\'en mode centralisé');
+            return;
+        }
+
+        // Obtenir le token JWT
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            throw new Error('Token d\'authentification manquant');
+        }
+
         try {
-            userManagement.deleteUser(userId);
-            displayUsers();
-            alert('Utilisateur supprimé avec succès');
+            // Récupérer les utilisateurs depuis le backend
+            const response = await fetch('http://localhost:4000/api/users', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la récupération des utilisateurs');
+            }
+
+            const backendUsers = await response.json();
+            
+            // Mettre à jour les utilisateurs locaux
+            this.users = backendUsers.map(user => ({
+                id: user._id,
+                username: user.username,
+                role: user.role,
+                createdAt: user.createdAt
+                // Note: Le mot de passe n'est pas renvoyé par le backend pour des raisons de sécurité
+            }));
+            
+            this.saveUsers();
+            
+            console.log('Utilisateurs synchronisés avec le backend');
         } catch (error) {
-            alert(error.message);
+            console.error('Erreur lors de la synchronisation avec le backend:', error);
+            throw error;
+        }
+    }
+
+    // Créer un utilisateur sur le backend (mode centralisé)
+    async createUserOnBackend(username, password, role = 'vendeur') {
+        // Vérifier si nous sommes en mode centralisé
+        const mode = localStorage.getItem('selectedMode');
+        if (mode !== 'central') {
+            console.log('La création d\'utilisateur sur le backend n\'est disponible qu\'en mode centralisé');
+            return;
+        }
+
+        // Obtenir le token JWT
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            throw new Error('Token d\'authentification manquant');
+        }
+
+        try {
+            // Créer l'utilisateur sur le backend
+            const response = await fetch('http://localhost:4000/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ username, password, role })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la création de l\'utilisateur');
+            }
+
+            const result = await response.json();
+            
+            // Synchroniser avec le backend
+            await this.syncWithBackend();
+            
+            console.log('Utilisateur créé sur le backend');
+            return result;
+        } catch (error) {
+            console.error('Erreur lors de la création de l\'utilisateur sur le backend:', error);
+            throw error;
+        }
+    }
+
+    // Mettre à jour un utilisateur sur le backend (mode centralisé)
+    async updateUserOnBackend(userId, updates) {
+        // Vérifier si nous sommes en mode centralisé
+        const mode = localStorage.getItem('selectedMode');
+        if (mode !== 'central') {
+            console.log('La mise à jour d\'utilisateur sur le backend n\'est disponible qu\'en mode centralisé');
+            return;
+        }
+
+        // Obtenir le token JWT
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            throw new Error('Token d\'authentification manquant');
+        }
+
+        try {
+            // Mettre à jour l'utilisateur sur le backend
+            const response = await fetch(`http://localhost:4000/api/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(updates)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la mise à jour de l\'utilisateur');
+            }
+
+            const result = await response.json();
+            
+            // Synchroniser avec le backend
+            await this.syncWithBackend();
+            
+            console.log('Utilisateur mis à jour sur le backend');
+            return result;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de l\'utilisateur sur le backend:', error);
+            throw error;
+        }
+    }
+
+    // Supprimer un utilisateur sur le backend (mode centralisé)
+    async deleteUserFromBackend(userId) {
+        // Vérifier si nous sommes en mode centralisé
+        const mode = localStorage.getItem('selectedMode');
+        if (mode !== 'central') {
+            console.log('La suppression d\'utilisateur sur le backend n\'est disponible qu\'en mode centralisé');
+            return;
+        }
+
+        // Obtenir le token JWT
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            throw new Error('Token d\'authentification manquant');
+        }
+
+        try {
+            // Supprimer l'utilisateur sur le backend
+            const response = await fetch(`http://localhost:4000/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la suppression de l\'utilisateur');
+            }
+
+            const result = await response.json();
+            
+            // Synchroniser avec le backend
+            await this.syncWithBackend();
+            
+            console.log('Utilisateur supprimé sur le backend');
+            return result;
+        } catch (error) {
+            console.error('Erreur lors de la suppression de l\'utilisateur sur le backend:', error);
+            throw error;
         }
     }
 }
 
-// Fonction pour obtenir les utilisateurs
-function getUsers() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `users_${boutiqueId}`;
-        console.log(`[getUsers] Mode local - Clé: ${key}`);
-        const data = localStorage.getItem(key);
-        const users = data ? JSON.parse(data) : [];
-        console.log(`[getUsers] Mode local - Utilisateurs:`, users);
-        return users;
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `users_central`;
-        console.log(`[getUsers] Mode centralisé - Clé: ${key}`);
-        const data = localStorage.getItem(key);
-        const users = data ? JSON.parse(data) : [];
-        console.log(`[getUsers] Mode centralisé - Utilisateurs:`, users);
-        return users;
-    }
-}
-
-// Fonction pour sauvegarder les utilisateurs
-function saveUsers(users) {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `users_${boutiqueId}`;
-        localStorage.setItem(key, JSON.stringify(users));
-    } else {
-        // Pour le mode centralisé, cela serait envoyé à un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `users_central`;
-        localStorage.setItem(key, JSON.stringify(users));
-    }
-}
-
-// Fonction pour ajouter un utilisateur
-function addUser(user) {
-    const users = getUsers();
-    
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = users.find(u => u.username === user.username);
-    if (existingUser) {
-        throw new Error('Un utilisateur avec ce nom existe déjà');
-    }
-    
-    // Ajouter l'utilisateur
-    users.push({
-        id: Date.now().toString(),
-        username: user.username,
-        password: user.password, // Dans une vraie application, le mot de passe serait hashé
-        role: user.role, // 'admin' ou 'vendeur'
-        createdAt: new Date().toISOString()
-    });
-    
-    saveUsers(users);
-}
-
-// Fonction pour modifier un utilisateur
-function updateUser(userId, updates) {
-    const users = getUsers();
-    const index = users.findIndex(u => u.id === userId);
-    
-    if (index === -1) {
-        throw new Error('Utilisateur non trouvé');
-    }
-    
-    // Mettre à jour l'utilisateur
-    users[index] = {
-        ...users[index],
-        ...updates
-    };
-    
-    saveUsers(users);
-}
-
-// Fonction pour supprimer un utilisateur
-function deleteUser(userId) {
-    const users = getUsers();
-    const index = users.findIndex(u => u.id === userId);
-    
-    if (index === -1) {
-        throw new Error('Utilisateur non trouvé');
-    }
-    
-    // Supprimer l'utilisateur
-    users.splice(index, 1);
-    saveUsers(users);
-}
-
-// Fonction pour authentifier un utilisateur
-function authenticateUser(username, password) {
-    const users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    return user || null;
-}
-
-// Fonction pour obtenir le rôle de l'utilisateur actuel
-function getCurrentUserRole() {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
-    return currentUser ? currentUser.role : null;
-}
-
-// Fonction pour vérifier si l'utilisateur a un rôle spécifique
-function hasRole(requiredRole) {
-    const userRole = getCurrentUserRole();
-    return userRole === requiredRole || userRole === 'admin'; // Admin a accès à tout
-}
-
-// Fonction pour vérifier si l'utilisateur est admin
-function isAdmin() {
-    return getCurrentUserRole() === 'admin';
-}
-
-// Fonction pour vérifier si l'utilisateur est vendeur
-function isSalesperson() {
-    return getCurrentUserRole() === 'vendeur';
-}
-
-// Fonction pour obtenir l'utilisateur actuel
-function getCurrentUser() {
-    return JSON.parse(sessionStorage.getItem('currentUser') || 'null');
-}
-
-// Fonction pour définir l'utilisateur actuel
-function setCurrentUser(user) {
-    sessionStorage.setItem('currentUser', JSON.stringify({
-        id: user.id,
-        username: user.username,
-        role: user.role
-    }));
-}
-
-// Fonction pour déconnecter l'utilisateur
-function logoutUser() {
-    sessionStorage.removeItem('currentUser');
-}
-
-// Exporter les fonctions
-window.userManagement = {
-    getUsers,
-    addUser,
-    updateUser,
-    deleteUser,
-    authenticateUser,
-    getCurrentUserRole,
-    hasRole,
-    isAdmin,
-    isSalesperson,
-    getCurrentUser,
-    setCurrentUser,
-    logoutUser
-};
+// Créer une instance globale
+window.users = new Users();

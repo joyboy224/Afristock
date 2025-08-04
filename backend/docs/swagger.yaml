@@ -1,0 +1,202 @@
+openapi: 3.0.0
+info:
+  title: Afristock API
+  version: 1.0.0
+  description: API pour le système de gestion de stock Afristock
+
+servers:
+  - url: http://localhost:4000
+    description: Serveur de développement
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Authentification utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      username:
+                        type: string
+                      role:
+                        type: string
+        '401':
+          description: Identifiants incorrects
+        '500':
+          description: Erreur serveur
+
+  /api/auth/register:
+    post:
+      summary: Inscription utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '201':
+          description: Utilisateur créé
+        '400':
+          description: Nom d'utilisateur déjà utilisé
+        '500':
+          description: Erreur serveur
+
+  /api/auth/reset-password:
+    post:
+      summary: Réinitialisation mot de passe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Mot de passe réinitialisé
+        '404':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur serveur
+
+  /api/users:
+    get:
+      summary: Récupérer tous les utilisateurs (admin)
+      responses:
+        '200':
+          description: Liste des utilisateurs
+        '403':
+          description: Accès refusé
+        '500':
+          description: Erreur serveur
+    post:
+      summary: Créer un utilisateur (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '201':
+          description: Utilisateur créé
+        '403':
+          description: Accès refusé
+        '500':
+          description: Erreur serveur
+
+  /api/users/{id}:
+    put:
+      summary: Mettre à jour un utilisateur (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '200':
+          description: Utilisateur mis à jour
+        '403':
+          description: Accès refusé
+        '404':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur serveur
+    delete:
+      summary: Supprimer un utilisateur (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Utilisateur supprimé
+        '403':
+          description: Accès refusé
+        '404':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur serveur
+
+  /api/docs:
+    get:
+      summary: Documentation des codes d'erreur
+      parameters:
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Documentation des codes d'erreur
+        '401':
+          description: Clé API invalide
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key

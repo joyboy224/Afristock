@@ -1,277 +1,536 @@
-// Gestion des rapports et des statistiques
+// Gestion des rapports
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Afficher le nom de la boutique
-    const boutiqueNameElement = document.getElementById('boutiqueName');
-    if (boutiqueNameElement) {
-        const boutiqueId = localStorage.getItem('boutiqueId');
-        if (boutiqueId) {
-            boutiqueNameElement.textContent = `Boutique: ${boutiqueId}`;
-        }
-    }
-    
-    // Afficher le mode
-    const modeInfoElement = document.getElementById('modeInfo');
-    if (modeInfoElement) {
-        const mode = localStorage.getItem('selectedMode') || 'local';
-        const modeText = mode === 'local' ? 'Stock individuel (local)' : 'Stock partagé (centralisé)';
-        modeInfoElement.textContent = `Mode: ${modeText}`;
-    }
-    
-    // Afficher le rôle de l'utilisateur
-    const user = userManagement.getCurrentUser();
-    if (user) {
-        document.getElementById('userRole').textContent = `Rôle: ${user.role === 'admin' ? 'Administrateur' : 'Vendeur'}`;
-    }
-    
-    // Bouton retour au tableau de bord
-    const backBtn = document.getElementById('backBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // Bouton de déconnexion
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('boutiqueId');
-            localStorage.removeItem('selectedMode');
-            sessionStorage.removeItem('currentUser');
-            userManagement.logoutUser();
-            window.location.href = 'login.html';
-        });
-    }
-    
-    // Bouton de génération de rapport
-    const generateReportBtn = document.getElementById('generateReportBtn');
-    if (generateReportBtn) {
-        generateReportBtn.addEventListener('click', generateReport);
-    }
-    
-    // Définir les dates par défaut (dernier mois)
-    const today = new Date();
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('endDate').value = today.toISOString().split('T')[0];
-});
-
-// Fonction pour générer un rapport
-function generateReport() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const reportType = document.getElementById('reportType').value;
-    
-    if (!startDate || !endDate) {
-        alert('Veuillez sélectionner une période');
-        return;
-    }
-    
-    // Obtenir les données en fonction du type de rapport
-    switch (reportType) {
-        case 'sales':
-            generateSalesReport(startDate, endDate);
-            break;
-        case 'inventory':
-            generateInventoryReport();
-            break;
-        case 'products':
-            generateProductsReport();
-            break;
-        default:
-            alert('Type de rapport non reconnu');
-    }
-}
-
-// Fonction pour générer un rapport de ventes
+// Générer un rapport de ventes
 function generateSalesReport(startDate, endDate) {
-    // Obtenir les factures
-    const invoices = getInvoices();
-    
-    // Filtrer les factures par date
-    const filteredInvoices = invoices.filter(invoice => {
-        const invoiceDate = new Date(invoice.date);
-        return invoiceDate >= new Date(startDate) && invoiceDate <= new Date(endDate);
-    });
+    // Filtrer les ventes par date
+    const sales = window.vente.filterSalesByDate(startDate, endDate);
     
     // Calculer les statistiques
-    let totalSales = 0;
-    let numberOfSales = filteredInvoices.length;
-    const productSales = {};
+    const totalSales = window.vente.getTotalSalesForPeriod(startDate, endDate);
+    const totalTransactions = sales.length;
+    const averageTransactionValue = totalTransactions > 0 ? totalSales / totalTransactions : 0;
     
-    // Parcourir les factures pour calculer les totaux
-    filteredInvoices.forEach(invoice => {
-        totalSales += invoice.totalAmount;
-        
-        // Compter les ventes par produit
-        invoice.items.forEach(item => {
-            if (productSales[item.productName]) {
-                productSales[item.productName] += item.quantity;
+    // Obtenir les produits les plus vendus
+    const productSales = {};
+    sales.forEach(sale => {
+        sale.items.forEach(item => {
+            if (productSales[item.productId]) {
+                productSales[item.productId].quantity += item.quantity;
+                productSales[item.productId].total += item.price * item.quantity;
             } else {
-                productSales[item.productName] = item.quantity;
+                productSales[item.productId] = {
+                    productId: item.productId,
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    total: item.price * item.quantity
+                };
             }
         });
     });
     
-    // Trouver les produits les plus vendus
-    const topProducts = Object.entries(productSales)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([product, quantity]) => `${product} (${quantity})`)
-        .join(', ');
+    // Trier les produits par quantité vendue
+    const topProducts = Object.values(productSales)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
     
-    // Mettre à jour l'affichage
-    document.getElementById('totalSales').textContent = `${totalSales} FCFA`;
-    document.getElementById('numberOfSales').textContent = numberOfSales;
-    document.getElementById('topProducts').textContent = topProducts || '-';
+    // Créer le rapport
+    const report = {
+        title: 'Rapport de ventes',
+        period: {
+            start: startDate,
+            end: endDate
+        },
+        summary: {
+            totalSales: totalSales,
+            totalTransactions: totalTransactions,
+            averageTransactionValue: averageTransactionValue
+        },
+        topProducts: topProducts,
+        sales: sales
+    };
     
-    // Afficher les détails dans le tableau
-    const tableBody = document.querySelector('#reportTable tbody');
-    tableBody.innerHTML = '';
+    return report;
+}
+
+// Générer un rapport de stock
+function generateStockReport() {
+    // Obtenir tous les produits
+    const products = window.produit.getAllProducts();
     
-    filteredInvoices.forEach(invoice => {
-        invoice.items.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${invoice.date}</td>
-                <td>${item.productName}</td>
-                <td>${item.quantity}</td>
-                <td>${item.unitPrice} FCFA</td>
-                <td>${item.totalPrice} FCFA</td>
-            `;
-            tableBody.appendChild(row);
+    // Calculer les statistiques
+    const totalProducts = products.length;
+    const totalValue = products.reduce((total, product) => total + (product.price * product.quantity), 0);
+    
+    // Obtenir les produits en rupture de stock
+    const outOfStockProducts = window.produit.getOutOfStockProducts();
+    
+    // Obtenir les produits à faible stock
+    const lowStockProducts = window.produit.getLowStockProducts();
+    
+    // Créer le rapport
+    const report = {
+        title: 'Rapport de stock',
+        summary: {
+            totalProducts: totalProducts,
+            totalValue: totalValue,
+            outOfStockCount: outOfStockProducts.length,
+            lowStockCount: lowStockProducts.length
+        },
+        outOfStockProducts: outOfStockProducts,
+        lowStockProducts: lowStockProducts,
+        products: products
+    };
+    
+    return report;
+}
+
+// Générer un rapport de factures
+function generateInvoicesReport(startDate, endDate) {
+    // Filtrer les factures par date
+    const invoices = window.facture.filterInvoicesByDate(startDate, endDate);
+    
+    // Calculer les statistiques
+    const totalInvoices = window.facture.getTotalInvoicesForPeriod(startDate, endDate);
+    const paidInvoices = window.facture.filterInvoicesByStatus('paid');
+    const pendingInvoices = window.facture.filterInvoicesByStatus('pending');
+    const cancelledInvoices = window.facture.filterInvoicesByStatus('cancelled');
+    
+    const paidTotal = window.facture.getTotalInvoicesByStatus('paid');
+    const pendingTotal = window.facture.getTotalInvoicesByStatus('pending');
+    const cancelledTotal = window.facture.getTotalInvoicesByStatus('cancelled');
+    
+    // Créer le rapport
+    const report = {
+        title: 'Rapport de factures',
+        period: {
+            start: startDate,
+            end: endDate
+        },
+        summary: {
+            totalInvoices: invoices.length,
+            totalValue: totalInvoices,
+            paidInvoices: paidInvoices.length,
+            pendingInvoices: pendingInvoices.length,
+            cancelledInvoices: cancelledInvoices.length,
+            paidTotal: paidTotal,
+            pendingTotal: pendingTotal,
+            cancelledTotal: cancelledTotal
+        },
+        invoices: invoices
+    };
+    
+    return report;
+}
+
+// Générer un rapport financier
+function generateFinancialReport(startDate, endDate) {
+    // Générer les rapports de ventes et de factures
+    const salesReport = generateSalesReport(startDate, endDate);
+    const invoicesReport = generateInvoicesReport(startDate, endDate);
+    
+    // Calculer les statistiques financières
+    const totalRevenue = salesReport.summary.totalSales;
+    const totalInvoiced = invoicesReport.summary.totalValue;
+    const totalPaid = invoicesReport.summary.paidTotal;
+    const totalPending = invoicesReport.summary.pendingTotal;
+    const totalCancelled = invoicesReport.summary.cancelledTotal;
+    
+    // Créer le rapport
+    const report = {
+        title: 'Rapport financier',
+        period: {
+            start: startDate,
+            end: endDate
+        },
+        summary: {
+            totalRevenue: totalRevenue,
+            totalInvoiced: totalInvoiced,
+            totalPaid: totalPaid,
+            totalPending: totalPending,
+            totalCancelled: totalCancelled
+        },
+        salesReport: salesReport,
+        invoicesReport: invoicesReport
+    };
+    
+    return report;
+}
+
+// Exporter un rapport au format CSV
+function exportReportToCSV(report, filename) {
+    // Convertir le rapport en CSV
+    let csv = '';
+    
+    // Ajouter le titre
+    csv += `Rapport: ${report.title}\n`;
+    csv += `Période: ${report.period ? report.period.start + ' - ' + report.period.end : 'Toute la période'}\n\n`;
+    
+    // Ajouter le résumé
+    csv += 'Résumé:\n';
+    for (const [key, value] of Object.entries(report.summary)) {
+        csv += `${key}: ${value}\n`;
+    }
+    
+    // Ajouter les données détaillées si elles existent
+    if (report.sales) {
+        csv += '\nVentes:\n';
+        csv += 'ID,Client,Total,Date,Statut\n';
+        report.sales.forEach(sale => {
+            csv += `${sale.id},${sale.customerName},${sale.total},${sale.date},${sale.status}\n`;
         });
-    });
+    }
+    
+    if (report.products) {
+        csv += '\nProduits:\n';
+        csv += 'ID,Nom,Quantité,Prix,Valeur totale\n';
+        report.products.forEach(product => {
+            csv += `${product.id},${product.name},${product.quantity},${product.price},${product.price * product.quantity}\n`;
+        });
+    }
+    
+    if (report.invoices) {
+        csv += '\nFactures:\n';
+        csv += 'ID,Client,Total,Date,Statut\n';
+        report.invoices.forEach(invoice => {
+            csv += `${invoice.id},${invoice.customerName},${invoice.total},${invoice.date},${invoice.status}\n`;
+        });
+    }
+    
+    // Créer un blob et un lien de téléchargement
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'rapport.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    console.log(`Rapport exporté: ${filename || 'rapport.csv'}`);
 }
 
-// Fonction pour générer un rapport de stock
-function generateInventoryReport() {
-    // Obtenir les produits
-    const products = getProducts();
+// Exporter un rapport au format PDF
+function exportReportToPDF(report, filename) {
+    // Pour cette simulation, nous allons simplement ouvrir une fenêtre avec le contenu du rapport
+    // Dans une implémentation réelle, vous utiliseriez une bibliothèque comme jsPDF
     
-    // Calculer les statistiques
-    let totalStockValue = 0;
-    let lowStockProducts = 0;
+    // Créer le contenu HTML du rapport
+    let html = `
+        <html>
+        <head>
+            <title>${report.title}</title>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                h1 { text-align: center; }
+                .report-header { text-align: center; margin-bottom: 20px; }
+                .report-summary { margin-bottom: 20px; }
+                .report-summary table { width: 100%; border-collapse: collapse; }
+                .report-summary table th, .report-summary table td { border: 1px solid #000; padding: 8px; text-align: left; }
+                .report-details { margin-top: 20px; }
+                .report-details table { width: 100%; border-collapse: collapse; }
+                .report-details table th, .report-details table td { border: 1px solid #000; padding: 8px; text-align: left; }
+            </style>
+        </head>
+        <body>
+            <div class="report-header">
+                <h1>${report.title}</h1>
+                ${report.period ? `<p>Période: ${report.period.start} - ${report.period.end}</p>` : ''}
+            </div>
+            
+            <div class="report-summary">
+                <h2>Résumé</h2>
+                <table>
+                    <tbody>
+    `;
     
-    products.forEach(product => {
-        totalStockValue += product.purchasePrice * product.quantity;
-        if (product.quantity < 5) {
-            lowStockProducts++;
-        }
-    });
+    for (const [key, value] of Object.entries(report.summary)) {
+        html += `<tr><td>${key}</td><td>${value}</td></tr>`;
+    }
     
-    // Mettre à jour l'affichage
-    document.getElementById('totalSales').textContent = `${totalStockValue} FCFA`;
-    document.getElementById('numberOfSales').textContent = products.length;
-    document.getElementById('topProducts').textContent = `${lowStockProducts} produit(s) en rupture`;
+    html += `
+                    </tbody>
+                </table>
+            </div>
+    `;
     
-    // Afficher les détails dans le tableau
-    const tableBody = document.querySelector('#reportTable tbody');
-    tableBody.innerHTML = '';
-    
-    products.forEach(product => {
-        const row = document.createElement('tr');
-        const stockValue = product.purchasePrice * product.quantity;
-        row.innerHTML = `
-            <td>-</td>
-            <td>${product.name}</td>
-            <td>${product.quantity}</td>
-            <td>${product.purchasePrice} FCFA</td>
-            <td>${stockValue} FCFA</td>
+    // Ajouter les détails des ventes si elles existent
+    if (report.sales) {
+        html += `
+            <div class="report-details">
+                <h2>Ventes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
         `;
-        tableBody.appendChild(row);
-    });
-}
-
-// Fonction pour générer un rapport de produits
-function generateProductsReport() {
-    // Obtenir les produits
-    const products = getProducts();
-    
-    // Calculer les statistiques
-    let totalProducts = products.length;
-    let totalStockValue = 0;
-    const brandCount = {};
-    
-    products.forEach(product => {
-        totalStockValue += product.purchasePrice * product.quantity;
         
-        // Compter les produits par marque
-        if (brandCount[product.brand]) {
-            brandCount[product.brand]++;
-        } else {
-            brandCount[product.brand] = 1;
-        }
-    });
-    
-    // Trouver les marques les plus représentées
-    const topBrands = Object.entries(brandCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([brand, count]) => `${brand} (${count})`)
-        .join(', ');
-    
-    // Mettre à jour l'affichage
-    document.getElementById('totalSales').textContent = `${totalStockValue} FCFA`;
-    document.getElementById('numberOfSales').textContent = totalProducts;
-    document.getElementById('topProducts').textContent = topBrands || '-';
-    
-    // Afficher les détails dans le tableau
-    const tableBody = document.querySelector('#reportTable tbody');
-    tableBody.innerHTML = '';
-    
-    products.forEach(product => {
-        const stockValue = product.purchasePrice * product.quantity;
-        const profitMargin = ((product.sellingPrice - product.purchasePrice) / product.purchasePrice * 100).toFixed(2);
-        row.innerHTML = `
-            <td>-</td>
-            <td>${product.name}</td>
-            <td>${product.quantity}</td>
-            <td>${product.purchasePrice} FCFA</td>
-            <td>${stockValue} FCFA</td>
+        report.sales.forEach(sale => {
+            html += `
+                <tr>
+                    <td>${sale.id}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${sale.total}</td>
+                    <td>${sale.date}</td>
+                    <td>${sale.status}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
         `;
-        tableBody.appendChild(row);
-    });
+    }
+    
+    // Ajouter les détails des produits si ils existent
+    if (report.products) {
+        html += `
+            <div class="report-details">
+                <h2>Produits</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Quantité</th>
+                            <th>Prix</th>
+                            <th>Valeur totale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        report.products.forEach(product => {
+            html += `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>${product.quantity}</td>
+                    <td>${product.price}</td>
+                    <td>${product.price * product.quantity}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Ajouter les détails des factures si elles existent
+    if (report.invoices) {
+        html += `
+            <div class="report-details">
+                <h2>Factures</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        report.invoices.forEach(invoice => {
+            html += `
+                <tr>
+                    <td>${invoice.id}</td>
+                    <td>${invoice.customerName}</td>
+                    <td>${invoice.total}</td>
+                    <td>${invoice.date}</td>
+                    <td>${invoice.status}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    html += `
+        </body>
+        </html>
+    `;
+    
+    // Ouvrir une nouvelle fenêtre avec le contenu du rapport
+    const pdfWindow = window.open('', '_blank');
+    pdfWindow.document.write(html);
+    pdfWindow.document.close();
+    
+    console.log(`Rapport exporté: ${filename || 'rapport.pdf'}`);
 }
 
-// Fonction pour obtenir les factures (copiée de facture.js)
-function getInvoices() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `invoices_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `invoices_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+// Afficher un rapport dans l'interface utilisateur
+function displayReport(report, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        throw new Error('Conteneur non trouvé');
     }
+    
+    // Créer le contenu HTML du rapport
+    let html = `
+        <div class="report">
+            <h2>${report.title}</h2>
+            ${report.period ? `<p>Période: ${report.period.start} - ${report.period.end}</p>` : ''}
+            
+            <div class="report-summary">
+                <h3>Résumé</h3>
+                <ul>
+    `;
+    
+    for (const [key, value] of Object.entries(report.summary)) {
+        html += `<li><strong>${key}:</strong> ${value}</li>`;
+    }
+    
+    html += `
+                </ul>
+            </div>
+    `;
+    
+    // Ajouter les détails des ventes si elles existent
+    if (report.sales) {
+        html += `
+            <div class="report-details">
+                <h3>Ventes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        report.sales.forEach(sale => {
+            html += `
+                <tr>
+                    <td>${sale.id}</td>
+                    <td>${sale.customerName}</td>
+                    <td>${sale.total}</td>
+                    <td>${sale.date}</td>
+                    <td>${sale.status}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Ajouter les détails des produits si ils existent
+    if (report.products) {
+        html += `
+            <div class="report-details">
+                <h3>Produits</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Quantité</th>
+                            <th>Prix</th>
+                            <th>Valeur totale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        report.products.forEach(product => {
+            html += `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>${product.quantity}</td>
+                    <td>${product.price}</td>
+                    <td>${product.price * product.quantity}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Ajouter les détails des factures si elles existent
+    if (report.invoices) {
+        html += `
+            <div class="report-details">
+                <h3>Factures</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        report.invoices.forEach(invoice => {
+            html += `
+                <tr>
+                    <td>${invoice.id}</td>
+                    <td>${invoice.customerName}</td>
+                    <td>${invoice.total}</td>
+                    <td>${invoice.date}</td>
+                    <td>${invoice.status}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    html += `
+        </div>
+    `;
+    
+    // Ajouter le contenu au conteneur
+    container.innerHTML = html;
+    
+    console.log('Rapport affiché');
 }
 
-// Fonction pour obtenir les produits (copiée de produit.js)
-function getProducts() {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `products_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `products_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
+// Exporter les fonctions pour une utilisation dans d'autres fichiers
+window.reports = {
+    generateSalesReport,
+    generateStockReport,
+    generateInvoicesReport,
+    generateFinancialReport,
+    exportReportToCSV,
+    exportReportToPDF,
+    displayReport
+};

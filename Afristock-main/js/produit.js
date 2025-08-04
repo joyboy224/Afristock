@@ -1,295 +1,234 @@
 // Gestion des produits
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Afficher la liste des produits dans le tableau de bord
-    if (document.getElementById('productsTable')) {
-        displayProducts();
-        updateStats();
+// Données des produits (simulation de base de données locale)
+let localProducts = [
+    { 
+        id: '1', 
+        name: 'Produit 1', 
+        description: 'Description du produit 1',
+        price: 1000,
+        quantity: 50,
+        category: 'Catégorie A'
+    },
+    { 
+        id: '2', 
+        name: 'Produit 2', 
+        description: 'Description du produit 2',
+        price: 2000,
+        quantity: 30,
+        category: 'Catégorie B'
+    }
+];
+
+// Initialiser la gestion des produits
+function initProducts() {
+    // Charger les produits depuis le localStorage
+    const savedProducts = localStorage.getItem('products');
+    if (savedProducts) {
+        localProducts = JSON.parse(savedProducts);
     }
     
-    // Gestion du formulaire d'ajout/édition de produit
-    const productForm = document.getElementById('productForm');
-    if (productForm) {
-        productForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveProduct();
-        });
+    console.log('Gestion des produits initialisée');
+}
+
+// Obtenir tous les produits
+function getAllProducts() {
+    return localProducts;
+}
+
+// Obtenir un produit par ID
+function getProductById(id) {
+    return localProducts.find(p => p.id === id);
+}
+
+// Créer un nouveau produit
+function createProduct(productData) {
+    // Générer un ID unique
+    const newId = (localProducts.length + 1).toString();
+    
+    // Créer le nouveau produit
+    const newProduct = {
+        id: newId,
+        ...productData
+    };
+    
+    // Ajouter à la liste des produits
+    localProducts.push(newProduct);
+    
+    // Sauvegarder dans le localStorage
+    saveProducts();
+    
+    console.log(`Produit créé: ${newProduct.name}`);
+    return newProduct;
+}
+
+// Mettre à jour un produit
+function updateProduct(productId, updates) {
+    const productIndex = localProducts.findIndex(p => p.id === productId);
+    if (productIndex !== -1) {
+        // Mettre à jour le produit
+        localProducts[productIndex] = { ...localProducts[productIndex], ...updates };
         
-        // Gestion de l'aperçu de l'image
-        const imageInput = document.getElementById('productImage');
-        if (imageInput) {
-            imageInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const imagePreview = document.getElementById('imagePreview');
-                        imagePreview.src = e.target.result;
-                        imagePreview.style.display = 'block';
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+        // Sauvegarder dans le localStorage
+        saveProducts();
+        
+        console.log(`Produit mis à jour: ${productId}`);
+        return localProducts[productIndex];
+    }
+    throw new Error('Produit non trouvé');
+}
+
+// Supprimer un produit
+function deleteProduct(productId) {
+    const productIndex = localProducts.findIndex(p => p.id === productId);
+    if (productIndex !== -1) {
+        // Supprimer le produit
+        const deletedProduct = localProducts.splice(productIndex, 1)[0];
+        
+        // Sauvegarder dans le localStorage
+        saveProducts();
+        
+        console.log(`Produit supprimé: ${deletedProduct.name}`);
+        return deletedProduct;
+    }
+    throw new Error('Produit non trouvé');
+}
+
+// Rechercher des produits
+function searchProducts(query) {
+    const lowerQuery = query.toLowerCase();
+    return localProducts.filter(p => 
+        p.name.toLowerCase().includes(lowerQuery) ||
+        p.description.toLowerCase().includes(lowerQuery) ||
+        p.category.toLowerCase().includes(lowerQuery)
+    );
+}
+
+// Filtrer les produits par catégorie
+function filterProductsByCategory(category) {
+    return localProducts.filter(p => p.category === category);
+}
+
+// Trier les produits
+function sortProducts(sortBy, ascending = true) {
+    const sortedProducts = [...localProducts];
+    
+    sortedProducts.sort((a, b) => {
+        if (a[sortBy] < b[sortBy]) {
+            return ascending ? -1 : 1;
         }
-    }
-    
-    // Bouton d'ajout de produit
-    const addProductBtn = document.getElementById('addProductBtn');
-    if (addProductBtn) {
-        addProductBtn.addEventListener('click', function() {
-            window.location.href = 'add_product.html';
-        });
-    }
-    
-    // Bouton "Voir les rapports"
-    const viewReportsBtn = document.getElementById('viewReportsBtn');
-    if (viewReportsBtn) {
-        viewReportsBtn.addEventListener('click', function() {
-            window.location.href = 'reports.html';
-        });
-    }
-    
-    // Bouton "Vente" (Enregistrer une vente)
-    const sellProductBtn = document.getElementById('sellProductBtn');
-    if (sellProductBtn) {
-        sellProductBtn.addEventListener('click', function() {
-            window.location.href = 'vente.html';
-        });
-    }
-    
-    // Bouton "Import/Export"
-    const importExportBtn = document.getElementById('importExportBtn');
-    if (importExportBtn) {
-        importExportBtn.addEventListener('click', function() {
-            window.location.href = 'import_export.html';
-        });
-    }
-    
-    // Bouton "Mouvements de stock"
-    const viewStockMovementsBtn = document.getElementById('viewStockMovementsBtn');
-    if (viewStockMovementsBtn) {
-        viewStockMovementsBtn.addEventListener('click', function() {
-            window.location.href = 'stock_movements.html';
-        });
-    }
-    
-    // Boutons d'annulation
-    const cancelBtn = document.getElementById('cancelBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-});
-
-// Fonction pour afficher les produits
-function displayProducts() {
-    const products = getProducts();
-    const tableBody = document.querySelector('#productsTable tbody');
-    
-    // Vider le tableau
-    tableBody.innerHTML = '';
-    
-    // Ajouter chaque produit au tableau
-    products.forEach(product => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${product.name}</td>
-            <td>${product.brand || '-'}</td>
-            <td>${product.purchasePrice} FCFA</td>
-            <td>${product.sellingPrice} FCFA</td>
-            <td>${product.quantity}</td>
-            <td>
-                <button class="edit-btn" data-id="${product.id}">Modifier</button>
-                <button class="delete-btn" data-id="${product.id}">Supprimer</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
+        if (a[sortBy] > b[sortBy]) {
+            return ascending ? 1 : -1;
+        }
+        return 0;
     });
     
-    // Ajouter les événements aux boutons
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            editProduct(productId);
-        });
-    });
-    
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            deleteProduct(productId);
-        });
-    });
+    return sortedProducts;
 }
 
-// Fonction pour obtenir les produits
-function getProducts() {
-    return getDataForMode('products');
+// Obtenir les catégories uniques
+function getUniqueCategories() {
+    const categories = localProducts.map(p => p.category);
+    return [...new Set(categories)];
 }
 
-// Fonction pour sauvegarder les produits
-function saveProducts(products) {
-    saveDataForMode('products', products);
+// Mettre à jour la quantité d'un produit
+function updateProductQuantity(productId, newQuantity) {
+    const product = getProductById(productId);
+    if (product) {
+        product.quantity = newQuantity;
+        
+        // Sauvegarder dans le localStorage
+        saveProducts();
+        
+        console.log(`Quantité mise à jour pour le produit ${productId}: ${newQuantity}`);
+        return product;
+    }
+    throw new Error('Produit non trouvé');
 }
 
-// Fonction pour sauvegarder un produit
-function saveProduct() {
-    const productId = document.getElementById('productId').value;
-    const name = document.getElementById('productName').value;
-    const brand = document.getElementById('brand').value;
-    const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
-    const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
-    const quantity = parseInt(document.getElementById('quantity').value);
-    const dimensions = document.getElementById('dimensions').value;
-    const imagePreview = document.getElementById('imagePreview').src;
-    
-    // Vérifier que les champs obligatoires sont remplis
-    if (!name || isNaN(purchasePrice) || isNaN(sellingPrice) || isNaN(quantity)) {
-        alert('Veuillez remplir tous les champs obligatoires');
+// Vérifier si un produit est en stock
+function isProductInStock(productId) {
+    const product = getProductById(productId);
+    return product && product.quantity > 0;
+}
+
+// Obtenir les produits en rupture de stock
+function getOutOfStockProducts() {
+    return localProducts.filter(p => p.quantity === 0);
+}
+
+// Obtenir les produits à faible stock
+function getLowStockProducts(threshold = 10) {
+    return localProducts.filter(p => p.quantity > 0 && p.quantity <= threshold);
+}
+
+// Sauvegarder les produits dans le localStorage
+function saveProducts() {
+    localStorage.setItem('products', JSON.stringify(localProducts));
+}
+
+// Synchroniser les produits avec le backend (mode centralisé)
+async function syncWithBackend() {
+    // Vérifier si nous sommes en mode centralisé
+    const mode = localStorage.getItem('selectedMode');
+    if (mode !== 'central') {
+        console.log('La synchronisation avec le backend n\'est disponible qu\'en mode centralisé');
         return;
     }
     
-    // Obtenir les produits existants
-    let products = getProducts();
+    // Obtenir le token JWT
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        throw new Error('Token d\'authentification manquant');
+    }
     
-    if (productId) {
-        // Modifier un produit existant
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-            // Enregistrer le mouvement de stock si la quantité change
-            const oldQuantity = products[index].quantity;
-            if (oldQuantity !== quantity) {
-                const stockBefore = oldQuantity;
-                const stockAfter = quantity;
-                const quantityDiff = quantity - oldQuantity;
-                const movementType = quantityDiff > 0 ? 'entry' : 'exit';
-                
-                // Enregistrer le mouvement de stock
-                window.recordStockMovement(productId, movementType, Math.abs(quantityDiff), stockBefore, stockAfter);
+    try {
+        // Récupérer les produits depuis le backend
+        const response = await fetch('http://localhost:4000/api/products', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
-            
-            products[index] = {
-                ...products[index],
-                name,
-                brand,
-                purchasePrice,
-                sellingPrice,
-                quantity,
-                dimensions,
-                image: imagePreview && !imagePreview.includes('data:,') ? imagePreview : products[index].image
-            };
-        }
-    } else {
-        // Ajouter un nouveau produit
-        const newProduct = {
-            id: Date.now().toString(),
-            name,
-            brand,
-            purchasePrice,
-            sellingPrice,
-            quantity,
-            dimensions,
-            image: imagePreview && !imagePreview.includes('data:,') ? imagePreview : ''
-        };
-        products.push(newProduct);
+        });
         
-        // Enregistrer le mouvement de stock pour l'ajout initial
-        window.recordStockMovement(newProduct.id, 'entry', quantity, 0, quantity);
-    }
-    
-    // Sauvegarder les produits
-    saveProducts(products);
-    
-    // Rediriger vers le tableau de bord
-    window.location.href = 'dashboard.html';
-}
-
-// Fonction pour modifier un produit
-function editProduct(productId) {
-    const products = getProducts();
-    const product = products.find(p => p.id === productId);
-    
-    if (product) {
-        // Remplir le formulaire avec les données du produit
-        document.getElementById('productId').value = product.id;
-        document.getElementById('productName').value = product.name;
-        document.getElementById('brand').value = product.brand || '';
-        document.getElementById('purchasePrice').value = product.purchasePrice;
-        document.getElementById('sellingPrice').value = product.sellingPrice;
-        document.getElementById('quantity').value = product.quantity;
-        document.getElementById('dimensions').value = product.dimensions || '';
-        
-        // Afficher l'image si elle existe
-        if (product.image) {
-            const imagePreview = document.getElementById('imagePreview');
-            imagePreview.src = product.image;
-            imagePreview.style.display = 'block';
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors de la récupération des produits');
         }
         
-        // Changer le titre du formulaire
-        document.querySelector('.product-form h1').textContent = 'Modifier un produit';
+        const backendProducts = await response.json();
         
-        // Changer le texte du bouton
-        document.getElementById('saveProductBtn').textContent = 'Mettre à jour le produit';
+        // Mettre à jour les produits locaux
+        localProducts = backendProducts;
+        
+        // Sauvegarder dans le localStorage
+        saveProducts();
+        
+        console.log('Produits synchronisés avec le backend');
+    } catch (error) {
+        console.error('Erreur lors de la synchronisation avec le backend:', error);
+        throw error;
     }
 }
 
-// Fonction pour supprimer un produit
-function deleteProduct(productId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-        let products = getProducts();
-        products = products.filter(p => p.id !== productId);
-        saveProducts(products);
-        displayProducts();
-        updateStats();
-    }
-}
+// Initialiser la gestion des produits
+initProducts();
 
-// Fonction pour mettre à jour les statistiques
-function updateStats() {
-    const products = getProducts();
-    const totalProducts = products.length;
-    const stockValue = products.reduce((total, product) => total + (product.purchasePrice * product.quantity), 0);
-    const lowStockAlerts = products.filter(product => product.quantity < 5).length;
-    
-    document.getElementById('totalProducts').textContent = totalProducts;
-    document.getElementById('stockValue').textContent = `${stockValue} FCFA`;
-    document.getElementById('lowStockAlerts').textContent = lowStockAlerts;
-}
-
-// Fonction pour obtenir les données selon le mode (copiée de mode.js)
-function getDataForMode(dataType) {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `${dataType}_${boutiqueId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } else {
-        // Pour le mode centralisé, cela viendrait d'un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `${dataType}_central`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-}
-
-// Fonction pour sauvegarder les données selon le mode (copiée de mode.js)
-function saveDataForMode(dataType, data) {
-    const mode = localStorage.getItem('selectedMode') || 'local';
-    const boutiqueId = localStorage.getItem('boutiqueId');
-    
-    if (mode === 'local') {
-        // Pour le mode local, utiliser localStorage
-        const key = `${dataType}_${boutiqueId}`;
-        localStorage.setItem(key, JSON.stringify(data));
-    } else {
-        // Pour le mode centralisé, cela serait envoyé à un serveur
-        // Dans cette implémentation, nous simulons avec localStorage
-        const key = `${dataType}_central`;
-        localStorage.setItem(key, JSON.stringify(data));
-    }
-}
+// Exporter les fonctions pour une utilisation dans d'autres fichiers
+window.produit = {
+    getAllProducts,
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    searchProducts,
+    filterProductsByCategory,
+    sortProducts,
+    getUniqueCategories,
+    updateProductQuantity,
+    isProductInStock,
+    getOutOfStockProducts,
+    getLowStockProducts,
+    syncWithBackend
+};
